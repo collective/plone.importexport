@@ -1,0 +1,3 @@
+graft src/plone
+graft docs/
+include *.cfg *.rst *.in
