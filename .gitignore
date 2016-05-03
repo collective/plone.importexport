@@ -23,3 +23,4 @@ local.cfg
 pip-selfcheck.json
 lib/
 include/python*
+src/plone.*
