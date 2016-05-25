@@ -10,4 +10,19 @@
         directory="static"
         />
 
+    <browser:page
+        for="Products.CMFCore.interfaces.IFolderish"
+        name="import-export"
+        class=".view.ImportExportView"
+        permission="cmf.ModifyPortalContent"
+        />
+
+    <browser:page
+        for="Products.CMFCore.interfaces.IFolderish"
+        name="export"
+        class=".view.ImportExportView"
+        attribute="export"
+        permission="cmf.ModifyPortalContent"
+        />
+
 </configure>

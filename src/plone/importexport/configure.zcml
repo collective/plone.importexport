@@ -20,11 +20,4 @@
         provides="Products.GenericSetup.interfaces.EXTENSION"
         />
 
-    <genericsetup:importStep
-        name="plone.importexport-postInstall"
-        title="plone.importexport post_install import step"
-        description="Post install import step from plone.importexport"
-        handler=".setuphandlers.post_install">
-    </genericsetup:importStep>
-
 </configure>
