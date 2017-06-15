@@ -25,4 +25,12 @@
         permission="cmf.ModifyPortalContent"
         />
 
+    <browser:page
+        for="Products.CMFCore.interfaces.IFolderish"
+        name="imports"
+        class=".view.ImportExportView"
+        attribute="imports"
+        permission="cmf.ModifyPortalContent"
+        />
+
 </configure>

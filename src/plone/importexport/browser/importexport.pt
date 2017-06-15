@@ -19,15 +19,15 @@ i18n:domain="plone">
       </section>
       <section>
         <h2 i18n:translate="">Import</h2>
-        <form action="@@import" method="POST">
+        <form action="@@imports" method="POST">
           <div class="field">
             <label for="importfile">File</label>
             <div class="formHelp" i18n:translate="import_basic_importfile_help">
               Select a CSV or a ZIP file providing the contents to import.
             </div>
-            <input type="file" name="importfile" />
+            <input type="file" name="importfile"  value="importfile"/>
           </div>
-          <input type="submit" name="import" value="Import" i18n:attributes="value" />
+          <input type="submit" name="imports" value="Import" i18n:attributes="value" />
         </form>
       </section>
     </fieldset>

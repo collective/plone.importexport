@@ -24,3 +24,4 @@ pip-selfcheck.json
 lib/
 include/python*
 src/plone.*
+src/plone/importexport/browser/dump/*
