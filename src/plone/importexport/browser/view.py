@@ -7,14 +7,17 @@ from plone.restapi.interfaces import IDeserializeFromJson
 from Products.Five import BrowserView
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from zope.component import queryMultiAdapter
+from zExceptions import BadRequest
 import zope
 import UserDict
 from plone.restapi.exceptions import DeserializationError
 from zope.publisher.interfaces.browser import IBrowserRequest
 from DateTime import DateTime
 from random import randint
+from urlparse import urlparse
 
-EXCLUDED_ATTRIBUTES = ['member', 'parent', ]
+# TODO: need commments upon these attributes
+EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changenote', '@id', 'UID']
 
 
 class ImportExportView(BrowserView):
@@ -22,26 +25,36 @@ class ImportExportView(BrowserView):
 
     template = ViewPageTemplateFile('importexport.pt')
 
-    def serialize(self, obj):
+    def serialize(self, obj, path_):
         # pdb.set_trace()
 
         serializer = queryMultiAdapter((obj, self.request), ISerializeToJson)
         if not serializer:
             return []
         data = serializer()
+
+        # store paths of child object items
+        if 'items' in data.keys():
+            path = []
+            for id_ in data['items']:
+                path.append(urlparse(id_['@id']).path)
+
         for key in EXCLUDED_ATTRIBUTES:
             if key in data:
                 del data[key]
+        data['path'] = path_
         results = [data]
         for member in obj.objectValues():
-            results += self.serialize(member)
+            # TODO: defualt plone config types?
+            if member.portal_type!="Plone Site":
+                results += self.serialize(member,path[0])
+                del path[0]
         return results
 
     # self==parent of obj, obj== working context, data=metadata for context
     def deserialize(self, obj, data):
-        pdb.set_trace()
+        # pdb.set_trace()
 
-        new_content = True
         id_ = data.get('id', None)
         type_ = data.get('@type', None)
         title = data.get('title', None)
@@ -60,17 +73,14 @@ class ImportExportView(BrowserView):
                 randint(0, 9999))
         else:
             new_id = id_
-            # check if context exist
-            for object_ in obj.items():
-                if new_id == object_[0]:
-                    new_content = False
-                    break
 
         if not title:
             title = new_id
 
-        # Create object
-        if new_content:
+        # check if context exist
+        if new_id not in obj.keys():
+            print 'creating new object'
+            # Create object
             try:
                 ''' invokeFactory() is more generic, it can be used for any type of content, not just Dexterity content
                 and it creates a new object at http://localhost:8080/self.context/new_id '''
@@ -119,7 +129,8 @@ class ImportExportView(BrowserView):
     def export(self):
         # pdb.set_trace()
         if self.request.method == 'POST':
-            results = self.serialize(self.context)
+            # TODO: neeed to look for home path of Plone sites
+            results = self.serialize(self.context, '/Plone')
 
             self.request.RESPONSE.setHeader(
                 'content-type', 'application/json; charset=utf-8')
@@ -138,11 +149,11 @@ class ImportExportView(BrowserView):
         return obj
 
     def imports(self):
-        pdb.set_trace()
+        # pdb.set_trace()
         if self.request.method == 'POST':
 
             # TODO: implement a pipeline for converting CSV to JSON
-            data = {"path": "/Plone/newfolder", "description": "some new folder", "@type":"Folder",
+            data = {"path": "/Plone/GSoC17", "description": "Just GSoC stuff", "@type":"Folder",'title':"GSoC17"
             # "id": "newfolder"
             }
 
