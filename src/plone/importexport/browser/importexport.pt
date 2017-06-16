@@ -13,13 +13,13 @@ i18n:domain="plone">
       <legend i18n:translate="">Basic</legend>
       <section>
         <h2 i18n:translate="">Export</h2>
-        <form action="@@export" method="POST">
+        <form action="export" method="POST">
           <input type="submit" name="export" value="Export" i18n:attributes="value" />
         </form>
       </section>
       <section>
         <h2 i18n:translate="">Import</h2>
-        <form action="@@imports" method="POST">
+        <form action="imports" method="POST">
           <div class="field">
             <label for="importfile">File</label>
             <div class="formHelp" i18n:translate="import_basic_importfile_help">
