@@ -15,6 +15,8 @@ from zope.publisher.interfaces.browser import IBrowserRequest
 from DateTime import DateTime
 from random import randint
 from urlparse import urlparse
+import csv
+import cStringIO
 
 # TODO: need commments upon these attributes
 EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id', 'UID']
@@ -126,6 +128,38 @@ class ImportExportView(BrowserView):
                 type='DeserializationError',
                 message=str(e)))
 
+    # return unique keys from list
+    def getcsvheaders(self,data):
+        header = []
+        for dict_ in data:
+            for key in dict_.keys():
+                if key not in header:
+                    header.append(key)
+
+        return header
+
+    def writejsontocsv(self,dict_data):
+        csv_output = cStringIO.StringIO()
+
+        csv_headers =self.getcsvheaders(dict_data)
+
+        if not csv_headers:
+            raise BadRequest("check json data, no keys found")
+
+        try:
+            '''The optional restval parameter specifies the value to be written if the dictionary is missing a key in fieldnames. If the dictionary passed to the writerow() method contains a key not found in fieldnames, the optional extrasaction parameter indicates what action to take. If it is set to 'raise' a ValueError is raised. If it is set to 'ignore', extra values in the dictionary are ignored.'''
+            writer = csv.DictWriter(csv_output, fieldnames=csv_headers,restval='Null', extrasaction='raise', dialect='excel')
+            writer.writeheader()
+            for data in dict_data:
+                writer.writerow(data)
+        except IOError as (errno, strerror):
+                print("I/O error({0}): {1}".format(errno, strerror))
+
+        data =  csv_output.getvalue()
+        csv_output.close()
+
+        return data
+
     def export(self):
         # pdb.set_trace()
         if self.request.method == 'POST':
@@ -134,11 +168,14 @@ class ImportExportView(BrowserView):
             url = self.request.URL
             home_path = '/' + urlparse(url).path.split('/')[1]
 
+            # results is a list of dicts
             results = self.serialize(self.context, home_path)
 
+            csv_output = self.writejsontocsv(results)
+
             self.request.RESPONSE.setHeader(
-                'content-type', 'application/json; charset=utf-8')
-            return json.dumps(results)
+                'content-type', 'application/csv; charset=utf-8')
+            return csv_output
         return
 
     def getparentcontext(self,data):
