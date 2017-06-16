@@ -17,7 +17,7 @@ from random import randint
 from urlparse import urlparse
 
 # TODO: need commments upon these attributes
-EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changenote', '@id', 'UID']
+EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id', 'UID']
 
 
 class ImportExportView(BrowserView):
@@ -45,7 +45,7 @@ class ImportExportView(BrowserView):
         data['path'] = path_
         results = [data]
         for member in obj.objectValues():
-            # TODO: defualt plone config types?
+            # TODO: defualt plone config @portal_type?
             if member.portal_type!="Plone Site":
                 results += self.serialize(member,path[0])
                 del path[0]
@@ -129,8 +129,12 @@ class ImportExportView(BrowserView):
     def export(self):
         # pdb.set_trace()
         if self.request.method == 'POST':
-            # TODO: neeed to look for home path of Plone sites
-            results = self.serialize(self.context, '/Plone')
+
+            # get home_path of Plone sites
+            url = self.request.URL
+            home_path = '/' + urlparse(url).path.split('/')[1]
+
+            results = self.serialize(self.context, home_path)
 
             self.request.RESPONSE.setHeader(
                 'content-type', 'application/json; charset=utf-8')
@@ -153,6 +157,7 @@ class ImportExportView(BrowserView):
         if self.request.method == 'POST':
 
             # TODO: implement a pipeline for converting CSV to JSON
+            # TODO: implement mechanism for file upload
             data = {"path": "/Plone/GSoC17", "description": "Just GSoC stuff", "@type":"Folder",'title':"GSoC17"
             # "id": "newfolder"
             }
