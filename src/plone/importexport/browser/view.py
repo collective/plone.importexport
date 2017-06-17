@@ -16,11 +16,38 @@ from DateTime import DateTime
 from random import randint
 from urlparse import urlparse
 import csv
-import cStringIO
+import StringIO, cStringIO
+import zipfile
+import urllib2, base64
 
 # TODO: need commments upon these attributes
 EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id', 'UID']
 
+class InMemoryZip(object):
+    def __init__(self):
+        # Create the in-memory file-like object
+        self.in_memory_zip = StringIO.StringIO()
+
+    def append(self, filename_in_zip, file_contents):
+        '''Appends a file with name filename_in_zip and contents of
+        file_contents to the in-memory zip.'''
+        # Get a handle to the in-memory zip in append mode
+        zf = zipfile.ZipFile(self.in_memory_zip, "a", zipfile.ZIP_DEFLATED, False)
+
+        # Write the file to the in-memory zip
+        zf.writestr(filename_in_zip, file_contents)
+
+        # Mark the files as having been created on Windows so that
+        # Unix permissions are not inferred as 0000
+        for zfile in zf.filelist:
+            zfile.create_system = 0
+
+        return self
+
+    def read(self):
+        '''Returns a string with the contents of the in-memory zip.'''
+        self.in_memory_zip.seek(0)
+        return self.in_memory_zip.read()
 
 class ImportExportView(BrowserView):
     """Import/Export page."""
@@ -154,8 +181,26 @@ class ImportExportView(BrowserView):
                 for key in data.keys():
                     if not data[key]:
                         data[key]="Null"
-                    # TODO: store blob content and replace url with path
                     if isinstance(data[key],(dict,list)):
+
+                        # store blob content and replace url with path
+                        if isinstance(data[key],dict) and 'download' in data[key].keys():
+                            # pdb.set_trace()
+
+                            # TODO: need to figure out auth issue
+                            request = urllib2.Request(data[key]['download'])
+                            base64string = base64.b64encode('%s:%s' % ('admin', 'admin'))
+                            request.add_header("Authorization", "Basic %s" % base64string)
+                            file_data = urllib2.urlopen(request)
+
+                            file_path = '/'.join(urlparse(data[key]['download']).path.split('/')[1:-2])
+                            filename = data[key]['filename']
+
+                            file_data = file_data.read()
+                            data[key]['download'] = file_path+'/'+filename
+
+                            self.zip.append(data[key]['download'],file_data)
+
                         data[key] = json.dumps(data[key])
                 writer.writerow(data)
         except IOError as (errno, strerror):
@@ -172,16 +217,26 @@ class ImportExportView(BrowserView):
 
             # get home_path of Plone sites
             url = self.request.URL
-            home_path = '/' + urlparse(url).path.split('/')[1]
+            id_ = urlparse(url).path.split('/')[1]
+            home_path = '/' + id_
 
             # results is a list of dicts
             results = self.serialize(self.context, home_path)
 
-            csv_output = self.writejsontocsv(results)
+            # create zip in memory
+            self.zip = InMemoryZip()
 
-            self.request.RESPONSE.setHeader(
-                'content-type', 'application/csv; charset=utf-8')
-            return csv_output
+            csv_output = self.writejsontocsv(results)
+            self.zip.append(id_+'.csv',csv_output)
+
+            # self.request.RESPONSE.setHeader(
+            #     'content-type', 'application/csv; charset=utf-8')
+            self.request.RESPONSE.setHeader('content-type', 'application/zip')
+            cd = 'attachment; filename=%s.zip' % (id_)
+            self.request.RESPONSE.setHeader('Content-Disposition', cd)
+
+            return self.zip.read()
+
         return
 
     def getparentcontext(self,data):
