@@ -138,19 +138,25 @@ class ImportExportView(BrowserView):
 
         return header
 
-    def writejsontocsv(self,dict_data):
+    def writejsontocsv(self,data_list):
         csv_output = cStringIO.StringIO()
 
-        csv_headers =self.getcsvheaders(dict_data)
+        csv_headers =self.getcsvheaders(data_list)
 
         if not csv_headers:
             raise BadRequest("check json data, no keys found")
 
         try:
             '''The optional restval parameter specifies the value to be written if the dictionary is missing a key in fieldnames. If the dictionary passed to the writerow() method contains a key not found in fieldnames, the optional extrasaction parameter indicates what action to take. If it is set to 'raise' a ValueError is raised. If it is set to 'ignore', extra values in the dictionary are ignored.'''
-            writer = csv.DictWriter(csv_output, fieldnames=csv_headers,restval='Null', extrasaction='raise', dialect='excel')
+            writer = csv.DictWriter(csv_output, fieldnames=csv_headers,restval='Field NA', extrasaction='raise', dialect='excel')
             writer.writeheader()
-            for data in dict_data:
+            for data in data_list:
+                for key in data.keys():
+                    if not data[key]:
+                        data[key]="Null"
+                    # TODO: store blob content and replace url with path
+                    if isinstance(data[key],(dict,list)):
+                        data[key] = json.dumps(data[key])
                 writer.writerow(data)
         except IOError as (errno, strerror):
                 print("I/O error({0}): {1}".format(errno, strerror))
@@ -193,6 +199,9 @@ class ImportExportView(BrowserView):
         # pdb.set_trace()
         if self.request.method == 'POST':
 
+
+            # csv_file = '/home/shriyanshagro/Awesome_Stuff/Plone/zinstance/src/plone.importexport/src/plone/importexport/browser/export.csv'
+            # json_data = self.readcsvasjson(csv_file)
             # TODO: implement a pipeline for converting CSV to JSON
             # TODO: implement mechanism for file upload
             data = {"path": "/Plone/GSoC17", "description": "Just GSoC stuff", "@type":"Folder",'title':"GSoC17"
