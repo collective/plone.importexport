@@ -20,8 +20,8 @@ import StringIO, cStringIO
 import zipfile
 import urllib2, base64
 
-# TODO: need commments upon these attributes
-EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id', 'UID']
+# TODO: in advanced tab, allow user to change this
+EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id', 'UID', 'scales']
 
 class InMemoryZip(object):
     def __init__(self):
@@ -54,6 +54,19 @@ class ImportExportView(BrowserView):
 
     template = ViewPageTemplateFile('importexport.pt')
 
+    # del EXCLUDED_ATTRIBUTES from data
+    def exclude_attributes(self,data):
+        if isinstance(data,dict):
+            for key in data.keys():
+                if isinstance(data[key],dict):
+                    self.exclude_attributes(data[key])
+                elif isinstance(data[key],list):
+                    # pdb.set_trace()
+                    for index in range(len(data[key])):
+                        self.exclude_attributes(data[key][index])
+                if key in EXCLUDED_ATTRIBUTES:
+                    del data[key]
+
     def serialize(self, obj, path_):
         # pdb.set_trace()
 
@@ -68,9 +81,9 @@ class ImportExportView(BrowserView):
             for id_ in data['items']:
                 path.append(urlparse(id_['@id']).path)
 
-        for key in EXCLUDED_ATTRIBUTES:
-            if key in data:
-                del data[key]
+        # del EXCLUDED_ATTRIBUTES from data
+        self.exclude_attributes(data)
+
         data['path'] = path_
         results = [data]
         for member in obj.objectValues():
