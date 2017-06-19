@@ -200,19 +200,21 @@ class ImportExportView(BrowserView):
                         if isinstance(data[key],dict) and 'download' in data[key].keys():
                             # pdb.set_trace()
 
-                            # TODO: need to figure out auth issue
-                            request = urllib2.Request(data[key]['download'])
-                            base64string = base64.b64encode('%s:%s' % ('admin', 'admin'))
-                            request.add_header("Authorization", "Basic %s" % base64string)
-                            file_data = urllib2.urlopen(request)
+                            parse = urlparse(data[key]['download']).path.split('/')
+                            id_ = parse[1]
+                            file_path = '/'.join(parse[2:-2])
 
-                            file_path = '/'.join(urlparse(data[key]['download']).path.split('/')[1:-2])
-                            filename = data[key]['filename']
-
-                            file_data = file_data.read()
-                            data[key]['download'] = file_path+'/'+filename
-
-                            self.zip.append(data[key]['download'],file_data)
+                            try:
+                                if data[key]['content-type'].split('/')[0]=='image':
+                                    file_data = self.context.restrictedTraverse(str(file_path)+'/image').data
+                                else:
+                                    file_data = self.context.restrictedTraverse(str(file_path)+'/file').data
+                            except:
+                                print 'Blob data fetching error'
+                            else:
+                                filename = data[key]['filename']
+                                data[key]['download'] = id_+'/'+file_path+'/'+filename
+                                self.zip.append(data[key]['download'],file_data)
 
                         data[key] = json.dumps(data[key])
                 writer.writerow(data)
