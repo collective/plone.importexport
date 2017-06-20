@@ -49,6 +49,68 @@ class InMemoryZip(object):
         self.in_memory_zip.seek(0)
         return self.in_memory_zip.read()
 
+class Pipeline(object):
+    # return unique keys from list
+    def getcsvheaders(self,data):
+        header = []
+        for dict_ in data:
+            for key in dict_.keys():
+                if key not in header:
+                    header.append(key)
+
+        return header
+
+    def convertjson(self,obj,data_list):
+        csv_output = cStringIO.StringIO()
+
+        url = obj.request.URL
+        id_ = urlparse(url).path.split('/')[1]
+
+        csv_headers =self.getcsvheaders(data_list)
+
+        if not csv_headers:
+            raise BadRequest("check json data, no keys found")
+
+        try:
+            '''The optional restval parameter specifies the value to be written if the dictionary is missing a key in fieldnames. If the dictionary passed to the writerow() method contains a key not found in fieldnames, the optional extrasaction parameter indicates what action to take. If it is set to 'raise' a ValueError is raised. If it is set to 'ignore', extra values in the dictionary are ignored.'''
+            writer = csv.DictWriter(csv_output, fieldnames=csv_headers,restval='Field NA', extrasaction='raise', dialect='excel')
+            writer.writeheader()
+            for data in data_list:
+                for key in data.keys():
+                    if not data[key]:
+                        data[key]="Null"
+                    if isinstance(data[key],(dict,list)):
+
+                        # store blob content and replace url with path
+                        if isinstance(data[key],dict) and 'download' in data[key].keys():
+                            # pdb.set_trace()
+
+                            parse = urlparse(data[key]['download']).path.split('/')
+                            file_path = '/'.join(parse[2:-2])
+
+                            try:
+                                if data[key]['content-type'].split('/')[0]=='image':
+                                    file_data = obj.context.restrictedTraverse(str(file_path)+'/image').data
+                                else:
+                                    file_data = obj.context.restrictedTraverse(str(file_path)+'/file').data
+                            except:
+                                print 'Blob data fetching error'
+                            else:
+                                filename = data[key]['filename']
+                                data[key]['download'] = id_+'/'+file_path+'/'+filename
+                                obj.zip.append(data[key]['download'],file_data)
+
+                        data[key] = json.dumps(data[key])
+                writer.writerow(data)
+        except IOError as (errno, strerror):
+                print("I/O error({0}): {1}".format(errno, strerror))
+        else:
+            obj.zip.append(id_+'.csv',csv_output.getvalue())
+            csv_output.close()
+            
+
+        return
+
 class ImportExportView(BrowserView):
     """Import/Export page."""
 
@@ -168,66 +230,15 @@ class ImportExportView(BrowserView):
                 type='DeserializationError',
                 message=str(e)))
 
-    # return unique keys from list
-    def getcsvheaders(self,data):
-        header = []
-        for dict_ in data:
-            for key in dict_.keys():
-                if key not in header:
-                    header.append(key)
-
-        return header
-
-    def writejsontocsv(self,data_list):
-        csv_output = cStringIO.StringIO()
-
-        csv_headers =self.getcsvheaders(data_list)
-
-        if not csv_headers:
-            raise BadRequest("check json data, no keys found")
-
-        try:
-            '''The optional restval parameter specifies the value to be written if the dictionary is missing a key in fieldnames. If the dictionary passed to the writerow() method contains a key not found in fieldnames, the optional extrasaction parameter indicates what action to take. If it is set to 'raise' a ValueError is raised. If it is set to 'ignore', extra values in the dictionary are ignored.'''
-            writer = csv.DictWriter(csv_output, fieldnames=csv_headers,restval='Field NA', extrasaction='raise', dialect='excel')
-            writer.writeheader()
-            for data in data_list:
-                for key in data.keys():
-                    if not data[key]:
-                        data[key]="Null"
-                    if isinstance(data[key],(dict,list)):
-
-                        # store blob content and replace url with path
-                        if isinstance(data[key],dict) and 'download' in data[key].keys():
-                            # pdb.set_trace()
-
-                            parse = urlparse(data[key]['download']).path.split('/')
-                            id_ = parse[1]
-                            file_path = '/'.join(parse[2:-2])
-
-                            try:
-                                if data[key]['content-type'].split('/')[0]=='image':
-                                    file_data = self.context.restrictedTraverse(str(file_path)+'/image').data
-                                else:
-                                    file_data = self.context.restrictedTraverse(str(file_path)+'/file').data
-                            except:
-                                print 'Blob data fetching error'
-                            else:
-                                filename = data[key]['filename']
-                                data[key]['download'] = id_+'/'+file_path+'/'+filename
-                                self.zip.append(data[key]['download'],file_data)
-
-                        data[key] = json.dumps(data[key])
-                writer.writerow(data)
-        except IOError as (errno, strerror):
-                print("I/O error({0}): {1}".format(errno, strerror))
-
-        data =  csv_output.getvalue()
-        csv_output.close()
-
-        return data
-
     def export(self):
         # pdb.set_trace()
+
+        # create zip in memory
+        self.zip = InMemoryZip()
+
+        # defines Pipeline
+        self.conversion = Pipeline()
+
         if self.request.method == 'POST':
 
             # get home_path of Plone sites
@@ -238,14 +249,8 @@ class ImportExportView(BrowserView):
             # results is a list of dicts
             results = self.serialize(self.context, home_path)
 
-            # create zip in memory
-            self.zip = InMemoryZip()
+            self.conversion.convertjson(self,results)
 
-            csv_output = self.writejsontocsv(results)
-            self.zip.append(id_+'.csv',csv_output)
-
-            # self.request.RESPONSE.setHeader(
-            #     'content-type', 'application/csv; charset=utf-8')
             self.request.RESPONSE.setHeader('content-type', 'application/zip')
             cd = 'attachment; filename=%s.zip' % (id_)
             self.request.RESPONSE.setHeader('Content-Disposition', cd)
@@ -267,8 +272,14 @@ class ImportExportView(BrowserView):
 
     def imports(self):
         # pdb.set_trace()
-        if self.request.method == 'POST':
 
+        # create zip in memory
+        self.zip = InMemoryZip()
+
+        # defines Pipeline
+        self.conversion = Pipeline()
+
+        if self.request.method == 'POST':
 
             # csv_file = '/home/shriyanshagro/Awesome_Stuff/Plone/zinstance/src/plone.importexport/src/plone/importexport/browser/export.csv'
             # json_data = self.readcsvasjson(csv_file)
