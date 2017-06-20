@@ -18,7 +18,6 @@ from urlparse import urlparse
 import csv
 import StringIO, cStringIO
 import zipfile
-import urllib2, base64
 import fnmatch
 import operator
 
@@ -63,7 +62,7 @@ class InMemoryZip(object):
 class Pipeline(object):
     # return unique keys from list
     def getcsvheaders(self,data):
-        # a trick to keep these fields at first in csv
+        # HACK to keep these fields at first in csv
         header = {'@type':3,'path':2, 'id':1}
         for dict_ in data:
             for key in dict_.keys():
@@ -120,6 +119,7 @@ class Pipeline(object):
                                 data[key]['download'] = id_+'/'+file_path+'/'+filename
                                 obj.zip.append(data[key]['download'],file_data)
 
+                        # converting list and dict to quoted json
                         data[key] = json.dumps(data[key])
                 writer.writerow(data)
         except IOError as (errno, strerror):
@@ -136,7 +136,24 @@ class Pipeline(object):
         data = []
         for row in reader:
             data.append(row)
+        # jsonify quoted json values
+        data = self.jsonify(data)
         return data
+
+    # jsonify quoted json values
+    def jsonify(self,data):
+        if isinstance(data,dict):
+            for key in data.keys():
+                data[key] = self.jsonify(data[key])
+        elif isinstance(data,list):
+            for index in range(len(data)):
+                data[index] = self.jsonify(data[index])
+        try:
+            data = json.loads(data)
+        except:
+            pass
+        finally:
+            return data
 
     def filter(self,data):
         if isinstance(data,list):
@@ -187,7 +204,7 @@ class ImportExportView(BrowserView):
         if data['@type']!="Plone Site":
             results = [data]
         for member in obj.objectValues():
-            # TODO: defualt plone config @portal_type?
+            # FIXME: defualt plone config @portal_type?
             if member.portal_type!="Plone Site":
                 results += self.serialize(member,path[0])
                 del path[0]
@@ -230,15 +247,11 @@ class ImportExportView(BrowserView):
 
                 new_id = obj.invokeFactory(type_, new_id, title=title)
             except BadRequest as e:
-                self.request.response.setStatus(400)
-                return dict(error=dict(
-                    type='DeserializationError',
-                    message=str(e.message)))
+                # self.request.response.setStatus(400)
+                return 'DeserializationError {}'.format(str(e.message))
             except ValueError as e:
-                self.request.response.setStatus(400)
-                return dict(error=dict(
-                    type='DeserializationError',
-                    message=str(e.message)))
+                # self.request.response.setStatus(400)
+                return 'DeserializationError {}'.format(str(e.message))
 
         # restapi expects a string of JSON data
         data = json.dumps(data)
@@ -255,8 +268,12 @@ class ImportExportView(BrowserView):
             deserializer()
             # self.request.response.setStatus(201)
             return "Success for {} \n".format(path)
-        except:
+        except DeserializationError as e:
             # self.request.response.setStatus(400)
+            # pdb.set_trace()
+            return "DeserializationError {0} {1} \n".format(str(e),path)
+        except:
+            # pdb.set_trace()
             return "DeserializationError {0} {1} \n".format(str('e'),path)
 
     def export(self):
@@ -336,12 +353,34 @@ class ImportExportView(BrowserView):
             # filter out undefined keys
             self.conversion.filter(data)
 
-            # pdb.set_trace()
             for index in range(len(data)):
                 obj_data = data[index]
 
                 if not obj_data['path']:
                     raise BadRequest("Property 'path' is required")
+
+
+                # FIXME: solution for more than one image/file in an object
+                if 'image' in obj_data.keys():
+                    # pdb.set_trace()
+                    if obj_data['image']['download'] in files.keys():
+                        try:
+                            content = files[obj_data['image']['download']].read()
+                            obj_data['image']['data'] = content.encode("base64")
+                            obj_data['image']['encoding'] = "base64"
+                        except:
+                            error_log += 'Error in fetching/encoding blob from zip {}'.format(obj_data['path'])
+
+                if 'file' in obj_data.keys():
+                    # pdb.set_trace()
+                    if obj_data['file']['download'] in files.keys():
+                        try:
+                            content = files[obj_data['file']['download']].read()
+                            obj_data['file']['data'] = content.encode("base64")
+                            obj_data['file']['encoding'] = "base64"
+                        except:
+                            error_log += 'Error in fetching/encoding blob from zip {}'.format(obj_data['path'])
+
 
                 # return parent of context
                 parent_context = self.getparentcontext(obj_data)
