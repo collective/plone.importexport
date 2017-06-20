@@ -19,9 +19,11 @@ import csv
 import StringIO, cStringIO
 import zipfile
 import urllib2, base64
+import fnmatch
+import operator
 
 # TODO: in advanced tab, allow user to change this
-EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id', 'UID', 'scales']
+EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id', 'UID', 'scales', 'items_total', 'table_of_contents', ]
 
 class InMemoryZip(object):
     def __init__(self):
@@ -49,16 +51,33 @@ class InMemoryZip(object):
         self.in_memory_zip.seek(0)
         return self.in_memory_zip.read()
 
+    def getfiles(self,zip_file):
+        data = {}
+        zfile = zipfile.ZipFile(zip_file,'r')
+        for name in zfile.namelist():
+            '''.open() returns a file-like object while .read() return a string like object
+            And csv.DictWriter needs a file like object'''
+            data[name] = zfile.open(name)
+        return data
+
 class Pipeline(object):
     # return unique keys from list
     def getcsvheaders(self,data):
-        header = []
+        # a trick to keep these fields at first in csv
+        header = {'@type':3,'path':2, 'id':1}
         for dict_ in data:
             for key in dict_.keys():
-                if key not in header:
-                    header.append(key)
+                if key not in header.keys():
+                    header[key]=1
+                else:
+                    header[key] += 1
 
-        return header
+        result = []
+        header = sorted(header.items(),key=operator.itemgetter(1), reverse=True)
+        for key in header:
+            result.append(key[0])
+        # pdb.set_trace()
+        return result
 
     def convertjson(self,obj,data_list):
         csv_output = cStringIO.StringIO()
@@ -97,6 +116,7 @@ class Pipeline(object):
                                 print 'Blob data fetching error'
                             else:
                                 filename = data[key]['filename']
+                                # pdb.set_trace()
                                 data[key]['download'] = id_+'/'+file_path+'/'+filename
                                 obj.zip.append(data[key]['download'],file_data)
 
@@ -107,9 +127,25 @@ class Pipeline(object):
         else:
             obj.zip.append(id_+'.csv',csv_output.getvalue())
             csv_output.close()
-            
+
 
         return
+
+    def converttojson(self,data):
+        reader = csv.DictReader(data)
+        data = []
+        for row in reader:
+            data.append(row)
+        return data
+
+    def filter(self,data):
+        if isinstance(data,list):
+            for index in range(len(data)):
+                self.filter(data[index])
+        elif isinstance(data,dict):
+            for key in data.keys():
+                if data[key]=="Field NA" or data[key]=="Null":
+                    del data[key]
 
 class ImportExportView(BrowserView):
     """Import/Export page."""
@@ -120,18 +156,19 @@ class ImportExportView(BrowserView):
     def exclude_attributes(self,data):
         if isinstance(data,dict):
             for key in data.keys():
+                if key in EXCLUDED_ATTRIBUTES:
+                    del data[key]
+                    continue
                 if isinstance(data[key],dict):
                     self.exclude_attributes(data[key])
                 elif isinstance(data[key],list):
                     # pdb.set_trace()
                     for index in range(len(data[key])):
                         self.exclude_attributes(data[key][index])
-                if key in EXCLUDED_ATTRIBUTES:
-                    del data[key]
 
     def serialize(self, obj, path_):
-        # pdb.set_trace()
 
+        results = []
         serializer = queryMultiAdapter((obj, self.request), ISerializeToJson)
         if not serializer:
             return []
@@ -147,12 +184,14 @@ class ImportExportView(BrowserView):
         self.exclude_attributes(data)
 
         data['path'] = path_
-        results = [data]
+        if data['@type']!="Plone Site":
+            results = [data]
         for member in obj.objectValues():
             # TODO: defualt plone config @portal_type?
             if member.portal_type!="Plone Site":
                 results += self.serialize(member,path[0])
                 del path[0]
+        # pdb.set_trace()
         return results
 
     # self==parent of obj, obj== working context, data=metadata for context
@@ -162,10 +201,10 @@ class ImportExportView(BrowserView):
         id_ = data.get('id', None)
         type_ = data.get('@type', None)
         title = data.get('title', None)
+        path = data.get('path', None)
 
         if not type_:
-            raise BadRequest("Property '@type' is required")
-
+            return "Property '@type' is required. {} \n".format(path)
 
         # creating  random id
         if not id_:
@@ -175,11 +214,11 @@ class ImportExportView(BrowserView):
                 now.strftime('%Y-%m-%d'),
                 str(now.millis())[7:],
                 randint(0, 9999))
+            if not title:
+                title = new_id
         else:
             new_id = id_
 
-        if not title:
-            title = new_id
 
         # check if context exist
         if new_id not in obj.keys():
@@ -212,26 +251,15 @@ class ImportExportView(BrowserView):
         context = obj[new_id]
 
         deserializer = queryMultiAdapter((context, request), IDeserializeFromJson)
-        if deserializer is None:
-            self.request.response.setStatus(501)
-            return dict(error=dict(
-                message='Cannot deserialize type {}'.format(
-                    obj.portal_type)))
-
         try:
             deserializer()
-            self.request.response.setStatus(201)
-            print 'deserializer works'
-            # TODO: all error log should be returned to user
-            return 'None'
-        except DeserializationError as e:
-            self.request.response.setStatus(400)
-            return dict(error=dict(
-                type='DeserializationError',
-                message=str(e)))
+            # self.request.response.setStatus(201)
+            return "Success for {} \n".format(path)
+        except:
+            # self.request.response.setStatus(400)
+            return "DeserializationError {0} {1} \n".format(str('e'),path)
 
     def export(self):
-        # pdb.set_trace()
 
         # create zip in memory
         self.zip = InMemoryZip()
@@ -246,6 +274,7 @@ class ImportExportView(BrowserView):
             id_ = urlparse(url).path.split('/')[1]
             home_path = '/' + id_
 
+            # pdb.set_trace()
             # results is a list of dicts
             results = self.serialize(self.context, home_path)
 
@@ -271,7 +300,6 @@ class ImportExportView(BrowserView):
         return obj
 
     def imports(self):
-        # pdb.set_trace()
 
         # create zip in memory
         self.zip = InMemoryZip()
@@ -279,30 +307,51 @@ class ImportExportView(BrowserView):
         # defines Pipeline
         self.conversion = Pipeline()
 
+        error_log = ''
+
         if self.request.method == 'POST':
 
-            # csv_file = '/home/shriyanshagro/Awesome_Stuff/Plone/zinstance/src/plone.importexport/src/plone/importexport/browser/export.csv'
-            # json_data = self.readcsvasjson(csv_file)
-            # TODO: implement a pipeline for converting CSV to JSON
             # TODO: implement mechanism for file upload
+            zip_filename = '/home/shriyanshagro/Awesome_Stuff/Plone/zinstance/src/plone.importexport/src/plone/importexport/browser/Plone.zip'
+            # json_data = self.readcsvasjson(csv_file)
             data = {"path": "/Plone/GSoC17", "description": "Just GSoC stuff", "@type":"Folder",'title':"GSoC17"
             # "id": "newfolder"
             }
 
-            if not data['path']:
-                raise BadRequest("Property 'path' is required")
+            files = self.zip.getfiles(zip_filename)
 
-            # return parent of context
-            parent_context = self.getparentcontext(data)
+            if not files:
+                raise BadRequest('Please provide a good file')
 
-            # all import error will be logged back
-            importerrors = self.deserialize(parent_context,data)
+            # get name of csv file
+            for key in files.keys():
+                if fnmatch.fnmatch(key,'*/*'):
+                    pass
+                elif fnmatch.fnmatch(key,'*.csv'):
+                    csv_file = key
 
-            self.request.RESPONSE.setHeader(
-                'content-type', 'application/json; charset=utf-8')
-            return json.dumps(importerrors)
+            # convert csv to json
+            data = self.conversion.converttojson(files[csv_file])
 
-        return
+            # filter out undefined keys
+            self.conversion.filter(data)
+
+            # pdb.set_trace()
+            for index in range(len(data)):
+                obj_data = data[index]
+
+                if not obj_data['path']:
+                    raise BadRequest("Property 'path' is required")
+
+                # return parent of context
+                parent_context = self.getparentcontext(obj_data)
+
+                # all import error will be logged back
+                error_log += self.deserialize(parent_context,obj_data)
+
+        self.request.RESPONSE.setHeader(
+            'content-type', 'application/text; charset=utf-8')
+        return error_log
 
     def __call__(self):
         return self.template()
