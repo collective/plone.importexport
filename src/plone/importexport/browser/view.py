@@ -103,24 +103,43 @@ class Pipeline(object):
                         if isinstance(data[key],dict) and 'download' in data[key].keys():
                             # pdb.set_trace()
 
-                            parse = urlparse(data[key]['download']).path.split('/')
-                            file_path = '/'.join(parse[2:-2])
+                            file_path = data['path']
+                            relative_filepath = '/'.join(file_path.split('/')[1:])
 
                             try:
                                 if data[key]['content-type'].split('/')[0]=='image':
-                                    file_data = obj.context.restrictedTraverse(str(file_path)+'/image').data
+                                    file_data = obj.context.restrictedTraverse(str(relative_filepath)+'/image').data
                                 else:
-                                    file_data = obj.context.restrictedTraverse(str(file_path)+'/file').data
+                                    file_data = obj.context.restrictedTraverse(str(relative_filepath)+'/file').data
                             except:
                                 print 'Blob data fetching error'
                             else:
                                 filename = data[key]['filename']
                                 # pdb.set_trace()
-                                data[key]['download'] = id_+'/'+file_path+'/'+filename
+                                data[key]['download'] = file_path+'/'+filename
+                                obj.zip.append(data[key]['download'],file_data)
+
+                        # store html files and replace key[data] with key[download], value= path in zip
+                        elif isinstance(data[key],dict) and 'data' in data[key].keys():
+                            # pdb.set_trace()
+
+                            file_path = data['path']
+
+                            try:
+                                # pdb.set_trace()
+                                if data[key]['content-type'].split('/')[1]=='html':
+                                    file_data = data[key]['data'].encode(data[key]['encoding'])
+                                    del data[key]['data']
+                            except:
+                                print 'html data fetching error'
+                            else:
+                                filename = file_path.split('/')[-1]+'.html'
+                                data[key]['download'] = file_path+'/'+filename
                                 obj.zip.append(data[key]['download'],file_data)
 
                         # converting list and dict to quoted json
                         data[key] = json.dumps(data[key])
+
                 writer.writerow(data)
         except IOError as (errno, strerror):
                 print("I/O error({0}): {1}".format(errno, strerror))
@@ -195,7 +214,8 @@ class ImportExportView(BrowserView):
         if 'items' in data.keys():
             path = []
             for id_ in data['items']:
-                path.append(urlparse(id_['@id']).path)
+                # HACK restapi path> /Plone/folder while zipfile> Plone/folder
+                path.append('/'.join(urlparse(id_['@id']).path.split('/')[1:]))
 
         # del EXCLUDED_ATTRIBUTES from data
         self.exclude_attributes(data)
@@ -311,7 +331,7 @@ class ImportExportView(BrowserView):
         obj = self.context
 
         # traversing to the desired folder
-        for index in range(2,len(path_)-1):
+        for index in range(1,len(path_)-1):
             obj = obj[path_[index]]
 
         return obj
@@ -353,16 +373,17 @@ class ImportExportView(BrowserView):
             # filter out undefined keys
             self.conversion.filter(data)
 
+            # deserialize
             for index in range(len(data)):
                 obj_data = data[index]
 
                 if not obj_data['path']:
                     raise BadRequest("Property 'path' is required")
 
+                # pdb.set_trace()
 
                 # FIXME: solution for more than one image/file in an object
                 if 'image' in obj_data.keys():
-                    # pdb.set_trace()
                     if obj_data['image']['download'] in files.keys():
                         try:
                             content = files[obj_data['image']['download']].read()
@@ -378,6 +399,16 @@ class ImportExportView(BrowserView):
                             content = files[obj_data['file']['download']].read()
                             obj_data['file']['data'] = content.encode("base64")
                             obj_data['file']['encoding'] = "base64"
+                        except:
+                            error_log += 'Error in fetching/encoding blob from zip {}'.format(obj_data['path'])
+
+                if 'text' in obj_data.keys() and obj_data['text']['content-type'].split('/')[-1]=="html":
+                    if obj_data['text']['download'] in files.keys():
+                        try:
+                            # pdb.set_trace()
+                            obj_data['text']['data'] = files[obj_data['text']['download']].read()
+                            # obj_data['text']['data'] = content.encode(obj_data['text']['encoding'])
+                            del obj_data['text']['download']
                         except:
                             error_log += 'Error in fetching/encoding blob from zip {}'.format(obj_data['path'])
 
