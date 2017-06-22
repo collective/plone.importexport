@@ -19,7 +19,7 @@ i18n:domain="plone">
       </section>
       <section>
         <h2 i18n:translate="">Import</h2>
-        <form action="imports" method="POST">
+        <form action="imports" enctype="multipart/form-data" method="POST">
           <div class="field">
             <label for="importfile">File</label>
             <div class="formHelp" i18n:translate="import_basic_importfile_help">

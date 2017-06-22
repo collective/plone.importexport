@@ -52,11 +52,18 @@ class InMemoryZip(object):
 
     def getfiles(self,zip_file):
         data = {}
+        '''The problem in the standard zipfile module is that when passed a file object (not a filename), it uses that same passed-in file object for every call to the open method. This means that tell and seek are getting called on the same file and so trying to open multiple files within the zip file is causing the file position to be shared and so multiple open calls result in them stepping all over each other. In contrast, when passed a filename, open opens a new file object.
+        error: *** BadZipfile: Bad CRC-32 for file 'Plone.csv'
+        There I realized if I do a seek(0) on the file object before initializing the ZipFile, the error goes away. Don't see why, as I did nothing before on the file object :/'''
+        zip_file.seek(0)
         zfile = zipfile.ZipFile(zip_file,'r')
         for name in zfile.namelist():
             '''.open() returns a file-like object while .read() return a string like object
             And csv.DictWriter needs a file like object'''
-            data[name] = zfile.open(name)
+            # FIXME .open() should work. May be after retriving data from /tmp in the server may solve this HACK
+            data[name] = cStringIO.StringIO()
+            data[name].write(zfile.read(name))
+            data[name].seek(0)
         return data
 
 class Pipeline(object):
@@ -346,19 +353,21 @@ class ImportExportView(BrowserView):
 
         error_log = ''
 
-        if self.request.method == 'POST':
+        # get file from form
+        zip_file = self.request.get('importfile',None)
 
-            # TODO: implement mechanism for file upload
-            zip_filename = '/home/shriyanshagro/Awesome_Stuff/Plone/zinstance/src/plone.importexport/src/plone/importexport/browser/Plone.zip'
-            # json_data = self.readcsvasjson(csv_file)
-            data = {"path": "/Plone/GSoC17", "description": "Just GSoC stuff", "@type":"Folder",'title':"GSoC17"
-            # "id": "newfolder"
-            }
+        if zip_file is None:
+            error_log += 'No file provided'
 
-            files = self.zip.getfiles(zip_filename)
+        # TODO validate zip_file,files,csv_file
+        if self.request.method == 'POST' and zip_file is not None:
+
+            # pdb.set_trace()
+            # unzip zip file
+            files = self.zip.getfiles(zip_file)
 
             if not files:
-                raise BadRequest('Please provide a good file')
+                error_log += 'Please provide a good zip file'
 
             # get name of csv file
             for key in files.keys():
