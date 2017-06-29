@@ -6,6 +6,7 @@ import zipfile
 import operator
 import json
 import pdb
+from plone.uuid.interfaces import IUUID
 
 class InMemoryZip(object):
     def __init__(self):
@@ -173,3 +174,44 @@ class Pipeline(object):
             for key in data.keys():
                 if data[key]=="Field NA" or data[key]=="Null":
                     del data[key]
+
+class mapping(object):
+
+    def __init__(self,obj):
+        self.mapping = {}
+        self.obj = obj
+
+    def mapNewUID(self,content):
+
+        # pdb.set_trace()
+        for data in  content:
+
+            UID = data.get('UID',None)
+            path = data.get('path',None)
+
+            if path and UID:
+                self.mapping[UID] = self.getUID(path)
+
+            else:
+                #TODO raise error_log here
+                continue
+
+        return self.mapping
+
+    def getUID(self,path):
+        """ AT and Dexterity compatible way to extract UID from a content item """
+
+        # Make sure you don't get UID from parent folder accidentally
+        context = self.obj.getobjcontext(path.split(os.sep))
+
+        # Returns UID of the context or None if not available
+        # Note that UID is always available for all Dexterity 1.1+
+        # content and this only can fail if the content is old not migrated
+        uuid = IUUID(context, None)
+        return uuid
+
+    # replacing old_UID with new_uid
+    def internallink(self,data):
+        for uid in self.mapping.keys():
+            data = data.replace(uid,self.mapping[uid])
+        return data

@@ -15,15 +15,12 @@ from zope.publisher.interfaces.browser import IBrowserRequest
 from DateTime import DateTime
 from random import randint
 from urlparse import urlparse
-import csv
-import StringIO, cStringIO
-import zipfile
 import fnmatch
-import operator
-import utils
+from plone.importexport import utils
+import os
 
 # TODO: in advanced tab, allow user to change this
-EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id', 'UID', 'scales', 'items_total', 'table_of_contents', ]
+EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id', 'scales', 'items_total', 'table_of_contents', ]
 
 class ImportExportView(BrowserView):
     """Import/Export page."""
@@ -169,15 +166,18 @@ class ImportExportView(BrowserView):
 
         return
 
-    def getparentcontext(self,data):
-        # FIXME for windows too, path>> Plone\site
-        path_ = data['path'].split('/')
-
+    # requires path list from root
+    def getobjcontext(self,path):
         obj = self.context
 
+        # FIXME raise error in log_file if element not present in site,
         # traversing to the desired folder
-        for index in range(1,len(path_)-1):
-            obj = obj[path_[index]]
+        for element in path[1:]:
+            try:
+                obj = obj[element]
+            except:
+                # TODO raise good error
+                return None
 
         return obj
 
@@ -188,6 +188,9 @@ class ImportExportView(BrowserView):
 
         # defines Pipeline
         self.conversion = utils.Pipeline()
+
+        # defines mapping for UID
+        self.mapping = utils.mapping(self)
 
         error_log = ''
 
@@ -220,8 +223,14 @@ class ImportExportView(BrowserView):
             # filter out undefined keys
             self.conversion.filter(data)
 
+            # get mapping of old and new UID
+            self.map_UID = self.mapping.mapNewUID(data)
+            # pdb.set_trace()
+
             # deserialize
             for index in range(len(data)):
+
+
                 obj_data = data[index]
 
                 # TODO raise the error into log_file
@@ -258,15 +267,21 @@ class ImportExportView(BrowserView):
                     if type_=="html" and value and files.get(value,None):
                         try:
                             # pdb.set_trace()
-                            obj_data['text']['data'] = files[value].read()
+                            file_data = files[value].read().decode(obj_data['text']['encoding'])
+
+                            # mapping old_UID with new_uid
+                            file_data = self.mapping.internallink(file_data).encode(obj_data['text']['encoding'])
+
+                            obj_data['text']['data'] = file_data
                             # obj_data['text']['data'] = content.encode(obj_data['text']['encoding'])
                             del obj_data['text']['download']
                         except:
                             error_log += 'Error in fetching/encoding blob from zip {}'.format(obj_data['path'])
 
 
+                #  os.sep is preferrable to support multiple filesystem
                 # return parent of context
-                parent_context = self.getparentcontext(obj_data)
+                parent_context = self.getobjcontext(obj_data['path'].split(os.sep)[:-1])
 
                 # all import error will be logged back
                 error_log += self.deserialize(parent_context,obj_data)
