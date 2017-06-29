@@ -75,61 +75,25 @@ class ImportExportView(BrowserView):
         # pdb.set_trace()
         return results
 
-    # self==parent of obj, obj== working context, data=metadata for context
-    def deserialize(self, obj, data):
+    # context == requested object, data=metadata for object in json string
+    def deserialize(self, context, data):
+
         # pdb.set_trace()
-
-        id_ = data.get('id', None)
-        type_ = data.get('@type', None)
-        title = data.get('title', None)
         path = data.get('path', None)
-
-        if not type_:
-            return "Property '@type' is required. {} \n".format(path)
-
-        # creating  random id
-        if not id_:
-            now = DateTime()
-            new_id = '{}.{}.{}{:04d}'.format(
-                type_.lower().replace(' ', '_'),
-                now.strftime('%Y-%m-%d'),
-                str(now.millis())[7:],
-                randint(0, 9999))
-            if not title:
-                title = new_id
-        else:
-            new_id = id_
-
-        # check if context exist
-        if new_id not in obj.keys():
-            print 'creating new object'
-            # Create object
-            try:
-                ''' invokeFactory() is more generic, it can be used for any
-                type of content, not just Dexterity content and it creates a
-                new object at http://localhost:8080/self.context/new_id '''
-
-                new_id = obj.invokeFactory(type_, new_id, title=title)
-            except BadRequest as e:
-                # self.request.response.setStatus(400)
-                return 'DeserializationError {}'.format(str(e.message))
-            except ValueError as e:
-                # self.request.response.setStatus(400)
-                return 'DeserializationError {}'.format(str(e.message))
 
         # restapi expects a string of JSON data
         data = json.dumps(data)
-        '''creating a spoof request with data embeded in BODY attribute, as
-           expected by restapi'''
+
+        '''creating a spoof request with data embeded in BODY attribute,
+            as expected by restapi'''
         request = UserDict.UserDict(BODY=data)
+
         # binding request to BrowserRequest
         zope.interface.directlyProvides(request, IBrowserRequest)
 
-        # context must be the parent request object
-        context = obj[new_id]
-
         deserializer = queryMultiAdapter((context, request),
                                          IDeserializeFromJson)
+
         try:
             deserializer()
             # self.request.response.setStatus(201)
@@ -170,6 +134,74 @@ class ImportExportView(BrowserView):
 
         return
 
+    # invoke non-existent content,  if any
+    def createcontent(self, data):
+        # pdb.set_trace()
+
+        log = ''
+        for index in range(len(data)):
+
+            obj_data = data[index]
+
+            if not obj_data.get('path', None):
+                log += 'pathError in {}'.format(obj_data['path'])
+                continue
+
+            if not obj_data.get('@type', None):
+                log += 'typeError in {}'.format(obj_data['path'])
+                continue
+
+            id_ = obj_data.get('id', None)
+            type_ = obj_data.get('@type', None)
+            title = obj_data.get('title', None)
+            path = obj_data.get('path', None)
+
+            # creating  random id
+            if not id_:
+                now = DateTime()
+                new_id = '{}.{}.{}{:04d}'.format(
+                    type_.lower().replace(' ', '_'),
+                    now.strftime('%Y-%m-%d'),
+                    str(now.millis())[7:],
+                    randint(0, 9999))
+                if not title:
+                    title = new_id
+            else:
+                new_id = id_
+
+            #  os.sep is preferrable to support multiple filesystem
+            #  return parent of context
+            obj = self.getobjcontext(
+                obj_data['path'].split(os.sep)[:-1])
+
+            if not obj:
+                log += 'pathError in {}'.format(
+                    obj_data['path'])
+                continue
+
+            # check if context exist
+            if not obj.get(new_id, None):
+
+                    log += 'creating new object {}'.format(
+                        obj_data['path'].split(os.sep)[-1])
+
+                    # Create object
+                    try:
+                        ''' invokeFactory() is more generic, it can be used for
+                        any type of content, not just Dexterity content and it
+                        creates a new object at
+                        http://localhost:8080/self.context/new_id '''
+
+                        new_id = obj.invokeFactory(type_, new_id, title=title)
+                    except BadRequest as e:
+                        # self.request.response.setStatus(400)
+                        log += 'DeserializationError {}'.format(str(e.message))
+                    except ValueError as e:
+                        # self.request.response.setStatus(400)
+                        log += 'DeserializationError {}'.format(str(e.message))
+
+        return log
+
     # requires path list from root
     def getobjcontext(self, path):
         obj = self.context
@@ -180,7 +212,6 @@ class ImportExportView(BrowserView):
             try:
                 obj = obj[element]
             except:
-                # TODO raise good error
                 return None
 
         return obj
@@ -197,7 +228,7 @@ class ImportExportView(BrowserView):
         self.mapping = utils.mapping(self)
 
         error_log = ''
-
+        temp_log = ''
         # get file from form
         zip_file = self.request.get('importfile', None)
 
@@ -207,7 +238,6 @@ class ImportExportView(BrowserView):
         # TODO validate zip_file,files,csv_file
         if self.request.method == 'POST' and zip_file is not None:
 
-            # pdb.set_trace()
             # unzip zip file
             files = self.zip.getfiles(zip_file)
 
@@ -227,77 +257,46 @@ class ImportExportView(BrowserView):
             # filter out undefined keys
             self.conversion.filter(data)
 
-            # get mapping of old and new UID
-            self.map_UID = self.mapping.mapNewUID(data)
+            # map old and new UID
+            self.mapping.mapNewUID(data)
             # pdb.set_trace()
+
+            # invoke non-existent content,  if any
+            error_log += self.createcontent(data)
+            # pdb.set_trace()
+
+            # get blob content into json data
+            data, temp_log = self.conversion.fillblobintojson(
+                                data, files, self.mapping)
+            # pdb.set_trace()
+
+            error_log += temp_log
 
             # deserialize
             for index in range(len(data)):
 
+                # pdb.set_trace()
                 obj_data = data[index]
 
                 # TODO raise the error into log_file
-                if not obj_data['path']:
-                    raise BadRequest("Property 'path' is required")
-
-                # pdb.set_trace()
-
-                # FIXME: solution for more than one image/file in an object
-                if obj_data.get('image', None):
-                    value = obj_data['image'].get('download', None)
-                    if value and files.get(value, None):
-                        try:
-                            content = files[value].read()
-                            obj_data['image']['data'] = content.encode(
-                                                        "base64")
-                            obj_data['image']['encoding'] = "base64"
-                        except:
-                            error_log += ('''Error in fetching/encoding blob
-                            from zip {}'''.format(obj_data['path']))
-
-                if obj_data.get('file', None):
-                    # pdb.set_trace()
-                    value = obj_data['file'].get('download', None)
-                    if value and files.get(value, None):
-                        try:
-                            content = filess[value].read()
-                            obj_data['file']['data'] = content.encode("base64")
-                            obj_data['file']['encoding'] = "base64"
-                        except:
-                            error_log += ('''Error in fetching/encoding blob
-                            from zip {}'''.format(obj_data['path']))
-
-                if (obj_data.get('text', None) and
-                        obj_data['text'].get('content-type', None)):
-                    type_ = obj_data['text']['content-type'].split('/')[-1]
-                    value = obj_data['text'].get('download', None)
-                    if type_ == "html" and value and files.get(value, None):
-                        try:
-                            # pdb.set_trace()
-                            file_data = files[value].read().decode(
-                                obj_data['text']['encoding'])
-
-                            # mapping old_UID with new_uid
-                            file_data = self.mapping.internallink(
-                                file_data).encode(obj_data['text']['encoding'])
-
-                            obj_data['text']['data'] = file_data
-
-                            del obj_data['text']['download']
-                        except:
-                            error_log += ('''Error in fetching/encoding blob
-                            from zip {}'''.format(obj_data['path']))
+                if not obj_data.get('path', None):
+                    error_log += 'pathError in {}'.format(obj_data['path'])
+                    continue
 
                 #  os.sep is preferrable to support multiple filesystem
                 #  return parent of context
-                parent_context = self.getobjcontext(
-                    obj_data['path'].split(os.sep)[:-1])
+                object_context = self.getobjcontext(
+                    obj_data['path'].split(os.sep))
 
                 # all import error will be logged back
-                error_log += self.deserialize(parent_context, obj_data)
+                if object_context:
+                    error_log += self.deserialize(object_context, obj_data)
+                else:
+                    error_log += 'pathError for {}'.format(obj_data['path'])
 
         self.request.RESPONSE.setHeader(
             'content-type', 'application/text; charset=utf-8')
+
         return error_log
 
     def __call__(self):
