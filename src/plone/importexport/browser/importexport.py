@@ -20,23 +20,25 @@ from plone.importexport import utils
 import os
 
 # TODO: in advanced tab, allow user to change this
-EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id', 'scales', 'items_total', 'table_of_contents', ]
+EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
+                       'scales', 'items_total', 'table_of_contents', ]
+
 
 class ImportExportView(BrowserView):
-    """Import/Export page."""
 
+    """Import/Export page."""
     template = ViewPageTemplateFile('importexport.pt')
 
     # del EXCLUDED_ATTRIBUTES from data
-    def exclude_attributes(self,data):
-        if isinstance(data,dict):
+    def exclude_attributes(self, data):
+        if isinstance(data, dict):
             for key in data.keys():
                 if key in EXCLUDED_ATTRIBUTES:
                     del data[key]
                     continue
-                if isinstance(data[key],dict):
+                if isinstance(data[key], dict):
                     self.exclude_attributes(data[key])
-                elif isinstance(data[key],list):
+                elif isinstance(data[key], list):
                     # pdb.set_trace()
                     for index in range(len(data[key])):
                         self.exclude_attributes(data[key][index])
@@ -63,12 +65,12 @@ class ImportExportView(BrowserView):
         self.exclude_attributes(data)
 
         data['path'] = path_
-        if data['@type']!="Plone Site":
+        if data['@type'] != "Plone Site":
             results = [data]
         for member in obj.objectValues():
             # FIXME: defualt plone config @portal_type?
-            if member.portal_type!="Plone Site":
-                results += self.serialize(member,path[0])
+            if member.portal_type != "Plone Site":
+                results += self.serialize(member, path[0])
                 del path[0]
         # pdb.set_trace()
         return results
@@ -98,14 +100,14 @@ class ImportExportView(BrowserView):
         else:
             new_id = id_
 
-
         # check if context exist
         if new_id not in obj.keys():
             print 'creating new object'
             # Create object
             try:
-                ''' invokeFactory() is more generic, it can be used for any type of content, not just Dexterity content
-                and it creates a new object at http://localhost:8080/self.context/new_id '''
+                ''' invokeFactory() is more generic, it can be used for any
+                type of content, not just Dexterity content and it creates a
+                new object at http://localhost:8080/self.context/new_id '''
 
                 new_id = obj.invokeFactory(type_, new_id, title=title)
             except BadRequest as e:
@@ -117,7 +119,8 @@ class ImportExportView(BrowserView):
 
         # restapi expects a string of JSON data
         data = json.dumps(data)
-        # creating a spoof request with data embeded in BODY attribute, as expected by restapi
+        '''creating a spoof request with data embeded in BODY attribute, as
+           expected by restapi'''
         request = UserDict.UserDict(BODY=data)
         # binding request to BrowserRequest
         zope.interface.directlyProvides(request, IBrowserRequest)
@@ -125,7 +128,8 @@ class ImportExportView(BrowserView):
         # context must be the parent request object
         context = obj[new_id]
 
-        deserializer = queryMultiAdapter((context, request), IDeserializeFromJson)
+        deserializer = queryMultiAdapter((context, request),
+                                         IDeserializeFromJson)
         try:
             deserializer()
             # self.request.response.setStatus(201)
@@ -133,10 +137,10 @@ class ImportExportView(BrowserView):
         except DeserializationError as e:
             # self.request.response.setStatus(400)
             # pdb.set_trace()
-            return "DeserializationError {0} {1} \n".format(str(e),path)
+            return "DeserializationError {0} {1} \n".format(str(e), path)
         except:
             # pdb.set_trace()
-            return "DeserializationError {0} {1} \n".format(str('e'),path)
+            return "DeserializationError {0} {1} \n".format(str('e'), path)
 
     def export(self):
 
@@ -156,7 +160,7 @@ class ImportExportView(BrowserView):
             # results is a list of dicts
             results = self.serialize(self.context, id_)
 
-            self.conversion.convertjson(self,results)
+            self.conversion.convertjson(self, results)
 
             self.request.RESPONSE.setHeader('content-type', 'application/zip')
             cd = 'attachment; filename=%s.zip' % (id_)
@@ -167,7 +171,7 @@ class ImportExportView(BrowserView):
         return
 
     # requires path list from root
-    def getobjcontext(self,path):
+    def getobjcontext(self, path):
         obj = self.context
 
         # FIXME raise error in log_file if element not present in site,
@@ -195,7 +199,7 @@ class ImportExportView(BrowserView):
         error_log = ''
 
         # get file from form
-        zip_file = self.request.get('importfile',None)
+        zip_file = self.request.get('importfile', None)
 
         if zip_file is None:
             error_log += 'No file provided'
@@ -212,9 +216,9 @@ class ImportExportView(BrowserView):
 
             # get name of csv file
             for key in files.keys():
-                if fnmatch.fnmatch(key,'*/*'):
+                if fnmatch.fnmatch(key, '*/*'):
                     pass
-                elif fnmatch.fnmatch(key,'*.csv'):
+                elif fnmatch.fnmatch(key, '*.csv'):
                     csv_file = key
 
             # convert csv to json
@@ -230,7 +234,6 @@ class ImportExportView(BrowserView):
             # deserialize
             for index in range(len(data)):
 
-
                 obj_data = data[index]
 
                 # TODO raise the error into log_file
@@ -240,51 +243,58 @@ class ImportExportView(BrowserView):
                 # pdb.set_trace()
 
                 # FIXME: solution for more than one image/file in an object
-                if obj_data.get('image',None):
-                    value = obj_data['image'].get('download',None)
-                    if value and files.get(value,None):
+                if obj_data.get('image', None):
+                    value = obj_data['image'].get('download', None)
+                    if value and files.get(value, None):
                         try:
                             content = files[value].read()
-                            obj_data['image']['data'] = content.encode("base64")
+                            obj_data['image']['data'] = content.encode(
+                                                        "base64")
                             obj_data['image']['encoding'] = "base64"
                         except:
-                            error_log += 'Error in fetching/encoding blob from zip {}'.format(obj_data['path'])
+                            error_log += ('''Error in fetching/encoding blob
+                            from zip {}'''.format(obj_data['path']))
 
-                if obj_data.get('file',None):
+                if obj_data.get('file', None):
                     # pdb.set_trace()
-                    value = obj_data['file'].get('download',None)
-                    if value and files.get(value,None):
+                    value = obj_data['file'].get('download', None)
+                    if value and files.get(value, None):
                         try:
-                            content = files[value].read()
+                            content = filess[value].read()
                             obj_data['file']['data'] = content.encode("base64")
                             obj_data['file']['encoding'] = "base64"
                         except:
-                            error_log += 'Error in fetching/encoding blob from zip {}'.format(obj_data['path'])
+                            error_log += ('''Error in fetching/encoding blob
+                            from zip {}'''.format(obj_data['path']))
 
-                if obj_data.get('text',None) and obj_data['text'].get('content-type',None):
+                if (obj_data.get('text', None) and
+                        obj_data['text'].get('content-type', None)):
                     type_ = obj_data['text']['content-type'].split('/')[-1]
-                    value = obj_data['text'].get('download',None)
-                    if type_=="html" and value and files.get(value,None):
+                    value = obj_data['text'].get('download', None)
+                    if type_ == "html" and value and files.get(value, None):
                         try:
                             # pdb.set_trace()
-                            file_data = files[value].read().decode(obj_data['text']['encoding'])
+                            file_data = files[value].read().decode(
+                                obj_data['text']['encoding'])
 
                             # mapping old_UID with new_uid
-                            file_data = self.mapping.internallink(file_data).encode(obj_data['text']['encoding'])
+                            file_data = self.mapping.internallink(
+                                file_data).encode(obj_data['text']['encoding'])
 
                             obj_data['text']['data'] = file_data
-                            # obj_data['text']['data'] = content.encode(obj_data['text']['encoding'])
+
                             del obj_data['text']['download']
                         except:
-                            error_log += 'Error in fetching/encoding blob from zip {}'.format(obj_data['path'])
-
+                            error_log += ('''Error in fetching/encoding blob
+                            from zip {}'''.format(obj_data['path']))
 
                 #  os.sep is preferrable to support multiple filesystem
-                # return parent of context
-                parent_context = self.getobjcontext(obj_data['path'].split(os.sep)[:-1])
+                #  return parent of context
+                parent_context = self.getobjcontext(
+                    obj_data['path'].split(os.sep)[:-1])
 
                 # all import error will be logged back
-                error_log += self.deserialize(parent_context,obj_data)
+                error_log += self.deserialize(parent_context, obj_data)
 
         self.request.RESPONSE.setHeader(
             'content-type', 'application/text; charset=utf-8')
