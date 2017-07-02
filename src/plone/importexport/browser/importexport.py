@@ -144,11 +144,11 @@ class ImportExportView(BrowserView):
             obj_data = data[index]
 
             if not obj_data.get('path', None):
-                log += 'pathError in {}'.format(obj_data['path'])
+                log += 'pathError in {}\n'.format(obj_data['path'])
                 continue
 
             if not obj_data.get('@type', None):
-                log += 'typeError in {}'.format(obj_data['path'])
+                log += 'typeError in {}\n'.format(obj_data['path'])
                 continue
 
             id_ = obj_data.get('id', None)
@@ -175,14 +175,14 @@ class ImportExportView(BrowserView):
                 obj_data['path'].split(os.sep)[:-1])
 
             if not obj:
-                log += 'pathError in {}'.format(
+                log += 'pathError in {}\n'.format(
                     obj_data['path'])
                 continue
 
             # check if context exist
             if not obj.get(new_id, None):
 
-                    log += 'creating new object {}'.format(
+                    log += 'creating new object {}\n'.format(
                         obj_data['path'].split(os.sep)[-1])
 
                     # Create object
@@ -195,10 +195,10 @@ class ImportExportView(BrowserView):
                         new_id = obj.invokeFactory(type_, new_id, title=title)
                     except BadRequest as e:
                         # self.request.response.setStatus(400)
-                        log += 'DeserializationError {}'.format(str(e.message))
+                        log += 'DeserializationError {}\n'.format(str(e.message))
                     except ValueError as e:
                         # self.request.response.setStatus(400)
-                        log += 'DeserializationError {}'.format(str(e.message))
+                        log += 'DeserializationError {}\n'.format(str(e.message))
 
         return log
 
