@@ -257,12 +257,12 @@ class ImportExportView(BrowserView):
             # filter out undefined keys
             self.conversion.filter(data)
 
-            # map old and new UID
-            self.mapping.mapNewUID(data)
-            # pdb.set_trace()
-
             # invoke non-existent content,  if any
             error_log += self.createcontent(data)
+            # pdb.set_trace()
+
+            # map old and new UID
+            self.mapping.mapNewUID(data)
             # pdb.set_trace()
 
             # get blob content into json data
