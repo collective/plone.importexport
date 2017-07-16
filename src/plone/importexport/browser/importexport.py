@@ -25,9 +25,7 @@ EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
 
 
 class ImportExportView(BrowserView):
-
     """Import/Export page."""
-    template = ViewPageTemplateFile('importexport.pt')
 
     # del EXCLUDED_ATTRIBUTES from data
     def exclude_attributes(self, data):
@@ -298,6 +296,3 @@ class ImportExportView(BrowserView):
             'content-type', 'application/text; charset=utf-8')
 
         return error_log
-
-    def __call__(self):
-        return self.template()
