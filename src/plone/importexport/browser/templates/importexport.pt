@@ -21,7 +21,6 @@ i18n:domain="plone">
         <h2 i18n:translate="">Import</h2>
         <form action="imports" enctype="multipart/form-data" method="POST">
           <div class="field">
-            <label for="importfile">File</label>
             <div class="formHelp" i18n:translate="import_basic_importfile_help">
               Select a CSV or a ZIP file providing the contents to import.
             </div>
@@ -33,9 +32,34 @@ i18n:domain="plone">
     </fieldset>
     <fieldset>
       <legend i18n:translate="">Advanced</legend>
-      <form action="@@export" method="POST">
-        <input type="submit" name="export" value="Export" i18n:attributes="value" />
-      </form>
+      <section>
+        <h2 i18n:translate="">Export</h2>
+        <form action="export" method="POST">
+          <div class="formHelp">
+            Add attributes to be excluded with a comma separated value. <br>
+            For Ex:- subjects,contributors      Caution: no space or UPPERCASE
+          </div>
+          <input type='text' name='excluded'>
+          <input type="submit" name="export" value="Export" i18n:attributes="value" />
+        </form>
+      </section>
+      <section>
+        <h2 i18n:translate="">Import</h2>
+        <form action="imports" enctype="multipart/form-data" method="POST">
+          <div class="field">
+            <div class="formHelp" i18n:translate="import_basic_importfile_help">
+              Select a CSV or a ZIP file providing the contents to import.
+            </div>
+            <input type="file" name="importfile"  />
+            <div class="formHelp">
+              Add attributes to be excluded while importing with a comma separated value. <br>
+              For Ex:- subjects,contributors      Caution: no space or UPPERCASE
+            </div>
+            <input type='text' name='excluded'>
+          </div>
+          <input type="submit" name="imports" value="Import" i18n:attributes="value" />
+        </form>
+      </section>
     </fieldset>
   </div>
 

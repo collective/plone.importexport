@@ -204,13 +204,13 @@ class Pipeline(object):
         finally:
             return data
 
-    def filter(self, data):
+    def filter(self, data, excluded):
         if isinstance(data, list):
             for index in range(len(data)):
-                self.filter(data[index])
+                self.filter(data[index], excluded)
         elif isinstance(data, dict):
             for key in data.keys():
-                if data[key] == "Field NA" or data[key] == "Null":
+                if data[key] == "Field NA" or data[key] == "Null" or key in excluded:
                     del data[key]
 
         return True

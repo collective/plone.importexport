@@ -19,7 +19,7 @@ import fnmatch
 from plone.importexport import utils
 import os
 
-# TODO: in advanced tab, allow user to change this
+global EXCLUDED_ATTRIBUTES
 EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
                        'scales', 'items_total', 'table_of_contents', ]
 
@@ -29,6 +29,7 @@ class ImportExportView(BrowserView):
 
     # del EXCLUDED_ATTRIBUTES from data
     def exclude_attributes(self, data):
+        global EXCLUDED_ATTRIBUTES
         if isinstance(data, dict):
             for key in data.keys():
                 if key in EXCLUDED_ATTRIBUTES:
@@ -101,7 +102,10 @@ class ImportExportView(BrowserView):
         except DeserializationError as e:
             # self.request.response.setStatus(400)
             # pdb.set_trace()
-            return "DeserializationError {0} {1} \n".format(str(e), path)
+            return "Got Error {0} {1} \n".format(str(e), path)
+        except BadRequest as e:
+            pdb.set_trace()
+            return "Got BadRequest {0} {1} \n".format(str(e), path)
         except:
             # pdb.set_trace()
             return "DeserializationError {0} {1} \n".format(str('e'), path)
@@ -114,13 +118,21 @@ class ImportExportView(BrowserView):
         # defines Pipeline
         self.conversion = utils.Pipeline()
 
+        global EXCLUDED_ATTRIBUTES
+
         if self.request.method == 'POST':
 
             # get id_ of Plone sites
             url = self.request.URL
             id_ = urlparse(url).path.split('/')[1]
 
-            # pdb.set_trace()
+            # fields/keys to exclude
+            exclude = self.request.excluded.split(',')
+            # FIXME matchcase, filter spaces and other unwanted characters
+
+            # get unique values in list
+            EXCLUDED_ATTRIBUTES = set(EXCLUDED_ATTRIBUTES + exclude)
+
             # results is a list of dicts
             results = self.serialize(self.context, id_)
 
@@ -254,8 +266,12 @@ class ImportExportView(BrowserView):
             # convert csv to json
             data = self.conversion.converttojson(files[csv_file])
 
+            # fields/keys to exclude
+            excluded = self.request.excluded.split(',')
+            # FIXME matchcase, filter spaces and other unwanted characters
+
             # filter out undefined keys
-            self.conversion.filter(data)
+            self.conversion.filter(data, excluded)
 
             # invoke non-existent content,  if any
             error_log += self.createcontent(data)
