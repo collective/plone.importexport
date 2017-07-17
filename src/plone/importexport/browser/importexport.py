@@ -44,6 +44,7 @@ class ImportExportView(BrowserView):
     def serialize(self, obj, path_):
 
         results = []
+        # using plone.restapi to serialize
         serializer = queryMultiAdapter((obj, self.request), ISerializeToJson)
         if not serializer:
             return []
@@ -89,6 +90,7 @@ class ImportExportView(BrowserView):
         # binding request to BrowserRequest
         zope.interface.directlyProvides(request, IBrowserRequest)
 
+        # using plone.restapi to deserialize
         deserializer = queryMultiAdapter((context, request),
                                          IDeserializeFromJson)
 
@@ -259,7 +261,7 @@ class ImportExportView(BrowserView):
             error_log += self.createcontent(data)
             # pdb.set_trace()
 
-            # map old and new UID
+            # map old and new UID in memory
             self.mapping.mapNewUID(data)
             # pdb.set_trace()
 
@@ -282,7 +284,7 @@ class ImportExportView(BrowserView):
                     continue
 
                 #  os.sep is preferrable to support multiple filesystem
-                #  return parent of context
+                #  return context of object
                 object_context = self.getobjcontext(
                     obj_data['path'].split(os.sep))
 
