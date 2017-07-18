@@ -71,7 +71,7 @@ class Pipeline(object):
     # return unique keys from list
     def getcsvheaders(self, data):
         # HACK to keep these fields at first in csv
-        header = {'@type': 3, 'path': 2, 'id': 1}
+        header = {'@type': 333, 'path': 222, 'id': 111, 'title': 100}
         for dict_ in data:
             for key in dict_.keys():
                 if key not in header.keys():
@@ -204,13 +204,24 @@ class Pipeline(object):
         finally:
             return data
 
-    def filter(self, data, excluded):
+    def filter_keys(self, data, excluded):
         if isinstance(data, list):
             for index in range(len(data)):
-                self.filter(data[index], excluded)
+                self.filter_keys(data[index], excluded)
         elif isinstance(data, dict):
             for key in data.keys():
                 if data[key] == "Field NA" or data[key] == "Null" or key in excluded:
+                    del data[key]
+
+        return True
+
+    def include_keys(self, data, included):
+        if isinstance(data, list):
+            for index in range(len(data)):
+                self.include_keys(data[index], included)
+        elif isinstance(data, dict):
+            for key in data.keys():
+                if data[key] == "Field NA" or data[key] == "Null" or key not in included:
                     del data[key]
 
         return True

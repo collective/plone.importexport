@@ -19,20 +19,27 @@ import fnmatch
 from plone.importexport import utils
 import os
 
-global EXCLUDED_ATTRIBUTES
-EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
+global MUST_EXCLUDED_ATTRIBUTES
+global MUST_INCLUDED_ATTRIBUTES
+global included_attributes
+global excluded_attributes
+
+# these attributes must be excluded while exporting
+MUST_EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
                        'scales', 'items_total', 'table_of_contents', ]
 
+# these attributes must be included while importing
+MUST_INCLUDED_ATTRIBUTES = ['@type', 'UID', 'path', 'id']
 
 class ImportExportView(BrowserView):
     """Import/Export page."""
 
-    # del EXCLUDED_ATTRIBUTES from data
+    # del excluded_attributes from data
     def exclude_attributes(self, data):
-        global EXCLUDED_ATTRIBUTES
+        global excluded_attributes
         if isinstance(data, dict):
             for key in data.keys():
-                if key in EXCLUDED_ATTRIBUTES:
+                if key in excluded_attributes:
                     del data[key]
                     continue
                 if isinstance(data[key], dict):
@@ -41,6 +48,16 @@ class ImportExportView(BrowserView):
                     # pdb.set_trace()
                     for index in range(len(data[key])):
                         self.exclude_attributes(data[key][index])
+
+    # allow only included_attributes in data
+    def include_attributes(self, data):
+        global included_attributes
+        # pdb.set_trace()
+        if isinstance(data, dict):
+            for key in data.keys():
+                if key not in included_attributes:
+                    del data[key]
+                    continue
 
     def serialize(self, obj, path_):
 
@@ -61,8 +78,16 @@ class ImportExportView(BrowserView):
                     url_path = url_path[1:]
                 path.append(url_path)
 
-        # del EXCLUDED_ATTRIBUTES from data
-        self.exclude_attributes(data)
+        if self.request.get('check', None):
+            if self.request.check == 'exclude':
+                # del excluded_attributes from data
+                self.exclude_attributes(data)
+            elif self.request.check == 'include':
+                # include only included_attributes in data
+                self.include_attributes(data)
+        else:
+            # del excluded_attributes from data
+            self.exclude_attributes(data)
 
         data['path'] = path_
         if data['@type'] != "Plone Site":
@@ -104,7 +129,7 @@ class ImportExportView(BrowserView):
             # pdb.set_trace()
             return "Got Error {0} {1} \n".format(str(e), path)
         except BadRequest as e:
-            pdb.set_trace()
+            # pdb.set_trace()
             return "Got BadRequest {0} {1} \n".format(str(e), path)
         except:
             # pdb.set_trace()
@@ -112,13 +137,16 @@ class ImportExportView(BrowserView):
 
     def export(self):
 
+        global MUST_EXCLUDED_ATTRIBUTES
+        global MUST_INCLUDED_ATTRIBUTES
+        global included_attributes
+        global excluded_attributes
+
         # create zip in memory
         self.zip = utils.InMemoryZip()
 
         # defines Pipeline
         self.conversion = utils.Pipeline()
-
-        global EXCLUDED_ATTRIBUTES
 
         if self.request.method == 'POST':
 
@@ -126,12 +154,24 @@ class ImportExportView(BrowserView):
             url = self.request.URL
             id_ = urlparse(url).path.split('/')[1]
 
-            # fields/keys to exclude
-            exclude = self.request.excluded.split(',')
-            # FIXME matchcase, filter spaces and other unwanted characters
+            # pdb.set_trace()
+            if self.request.get('check', None):
+                if self.request.check == 'exclude':
+                    # fields/keys to exclude
+                    exclude = self.request.excluded_attributes.split(',')
+                    # FIXME matchcase, filter spaces and other unwanted characters
 
-            # get unique values in list
-            EXCLUDED_ATTRIBUTES = set(EXCLUDED_ATTRIBUTES + exclude)
+                    # get unique values in list
+                    excluded_attributes = list(set(MUST_EXCLUDED_ATTRIBUTES + exclude))
+
+                elif self.request.check == 'include':
+                    include = self.request.included_attributes.split(',')
+                    # FIXME matchcase, filter spaces and other unwanted characters
+
+                    # get unique values in list
+                    included_attributes = list(set(include))
+            else:
+                errorlog = 'No check provided. Thus exporting whole content'
 
             # results is a list of dicts
             results = self.serialize(self.context, id_)
@@ -230,6 +270,9 @@ class ImportExportView(BrowserView):
 
     def imports(self):
 
+        global MUST_EXCLUDED_ATTRIBUTES
+        global MUST_INCLUDED_ATTRIBUTES
+
         # create zip in memory
         self.zip = utils.InMemoryZip()
 
@@ -266,12 +309,36 @@ class ImportExportView(BrowserView):
             # convert csv to json
             data = self.conversion.converttojson(files[csv_file])
 
-            # fields/keys to exclude
-            excluded = self.request.excluded.split(',')
-            # FIXME matchcase, filter spaces and other unwanted characters
+            attribute = []
 
-            # filter out undefined keys
-            self.conversion.filter(data, excluded)
+            # check for advanced tab
+            if self.request.get('check', None):
+                # pdb.set_trace()
+                if self.request.check == 'exclude':
+                    # fields/keys to exclude
+                    exclude = self.request.excluded_attributes.split(',')
+                    # FIXME matchcase, filter spaces and other unwanted characters
+
+                    # check to include MUST_INCLUDED_ATTRIBUTES in import file
+                    attribute = filter(lambda x: x not in MUST_INCLUDED_ATTRIBUTES, exclude)
+
+                    # filter out keys
+                    self.conversion.filter_keys(data, attribute)
+
+                elif self.request.check == 'include':
+                    include = self.request.included_attributes.split(',')
+                    # FIXME matchcase, filter spaces and other unwanted characters
+
+                    included_attributes = list(set(MUST_INCLUDED_ATTRIBUTES + include))
+
+                    # include only certain keys
+                    self.conversion.include_keys(data, included_attributes)
+
+            else:
+                errorlog = 'No check provided. Thus importing whole content'
+                # filter out undefined keys
+                self.conversion.filter_keys(data, attribute)
+
 
             # invoke non-existent content,  if any
             error_log += self.createcontent(data)

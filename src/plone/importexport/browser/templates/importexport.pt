@@ -35,28 +35,47 @@ i18n:domain="plone">
       <section>
         <h2 i18n:translate="">Export</h2>
         <form action="export" method="POST">
+           <input type="radio" name="check" value="exclude"> Exclude<br>
           <div class="formHelp">
-            Add attributes to be excluded with a comma separated value. <br>
-            For Ex:- subjects,contributors      Caution: no space or UPPERCASE
+            Specify attributes to be <b>excluded</b> from export with a comma separated value. <br>
+            For Ex:- subjects,contributors.... <strong>Caution</strong>: no space or UPPERCASE
           </div>
-          <input type='text' name='excluded'>
+          <input type='text' name='excluded_attributes'>
+          <br>
+            <input type="radio" name="check" value="include"> Includes
+          <br>
+          <div class="formHelp">
+            Specify attributes to be exported with a comma separated value. <u>If not specified all the atributes will be exported</u> <br>
+            For Ex:- subjects,contributors.... <strong>Caution</strong>: no space or UPPERCASE
+          </div>
+          <input type='text' name='included_attributes'>
           <input type="submit" name="export" value="Export" i18n:attributes="value" />
         </form>
       </section>
+      <hr>
       <section>
         <h2 i18n:translate="">Import</h2>
         <form action="imports" enctype="multipart/form-data" method="POST">
+          <input type="radio" name="check" value="exclude"> Exclude<br>
           <div class="field">
-            <div class="formHelp" i18n:translate="import_basic_importfile_help">
-              Select a CSV or a ZIP file providing the contents to import.
-            </div>
-            <input type="file" name="importfile"  />
             <div class="formHelp">
-              Add attributes to be excluded while importing with a comma separated value. <br>
-              For Ex:- subjects,contributors      Caution: no space or UPPERCASE
+              Specify attributes to be <b>excluded</b> while importing with a comma separated value. <br>
+              For Ex:- subjects,contributors.... <strong>Caution</strong>: no space or UPPERCASE
             </div>
-            <input type='text' name='excluded'>
+            <input type='text' name='excluded_attributes'>
+            <br>
+              <input type="radio" name="check" value="include"> Includes
+            <br>
+            <div class="formHelp">
+              Specify attributes to be <b>included</b> while importing with a comma separated value. <br>
+              For Ex:- subjects,contributors.... <strong>Caution</strong>: no space or UPPERCASE
+            </div>
+            <input type='text' name='included_attributes'>
           </div>
+          <div class="formHelp" i18n:translate="import_basic_importfile_help">
+            Select a CSV or a ZIP file providing the contents to import.
+          </div>
+          <input type="file" name="importfile"  />
           <input type="submit" name="imports" value="Import" i18n:attributes="value" />
         </form>
       </section>
