@@ -35,14 +35,14 @@ i18n:domain="plone">
       <section>
         <h2 i18n:translate="">Export</h2>
         <form action="export" method="POST">
-           <input type="radio" name="check" value="exclude"> Exclude<br>
+           <input type="radio" name="check" value="exclude"/> Exclude<br>
           <div class="formHelp">
             Specify attributes to be <b>excluded</b> from export with a comma separated value. <br>
             For Ex:- subjects,contributors.... <strong>Caution</strong>: no space or UPPERCASE
           </div>
           <input type='text' name='excluded_attributes'>
           <br>
-            <input type="radio" name="check" value="include"> Includes
+            <input type="radio" name="check" value="include"/> Includes
           <br>
           <div class="formHelp">
             Specify attributes to be exported with a comma separated value. <u>If not specified all the atributes will be exported</u> <br>
@@ -56,7 +56,7 @@ i18n:domain="plone">
       <section>
         <h2 i18n:translate="">Import</h2>
         <form action="imports" enctype="multipart/form-data" method="POST">
-          <input type="radio" name="check" value="exclude"> Exclude<br>
+          <input type="radio" name="check" value="exclude"/> Exclude<br>
           <div class="field">
             <div class="formHelp">
               Specify attributes to be <b>excluded</b> while importing with a comma separated value. <br>
@@ -64,7 +64,7 @@ i18n:domain="plone">
             </div>
             <input type='text' name='excluded_attributes'>
             <br>
-              <input type="radio" name="check" value="include"> Includes
+              <input type="radio" name="check" value="include"/> Includes
             <br>
             <div class="formHelp">
               Specify attributes to be <b>included</b> while importing with a comma separated value. <br>
@@ -76,6 +76,12 @@ i18n:domain="plone">
             Select a CSV or a ZIP file providing the contents to import.
           </div>
           <input type="file" name="importfile"  />
+          <div class="formHelp" i18n:translate="import_basic_importfile_help">
+            Action to take if content already exist?
+          </div>
+          <input type='radio' name='action' value='overwrite' checked='checked'> Overwrite
+          <input type='radio' name='action' value='ignore'> Ignore
+          <br>
           <input type="submit" name="imports" value="Import" i18n:attributes="value" />
         </form>
       </section>

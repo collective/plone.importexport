@@ -226,68 +226,63 @@ class Pipeline(object):
 
         return True
 
-    def fillblobintojson(self, data, files, UIDmapping):
+    def fillblobintojson(self, obj_data, files, UIDmapping):
 
         # pdb.set_trace()
         self.mapping = UIDmapping
         error_log = ''
-        for index in range(len(data)):
 
-            obj_data = data[index]
+        # FIXME: solution for more than one image/file in an object
 
-            # FIXME: solution for more than one image/file in an object
+        if obj_data.get('image', None):
+            value = obj_data['image'].get('download', None)
+            if value and files.get(value, None):
+                try:
+                    content = files[value].read()
+                    obj_data['image']['data'] = content.encode(
+                                                "base64")
+                    obj_data['image']['encoding'] = "base64"
+                except:
+                    error_log += ('''Error in fetching/encoding blob
+                    from zip {}'''.format(obj_data['path']))
 
-            if obj_data.get('image', None):
-                value = obj_data['image'].get('download', None)
-                if value and files.get(value, None):
-                    try:
-                        content = files[value].read()
-                        obj_data['image']['data'] = content.encode(
-                                                    "base64")
-                        obj_data['image']['encoding'] = "base64"
-                    except:
-                        error_log += ('''Error in fetching/encoding blob
-                        from zip {}'''.format(obj_data['path']))
+        if obj_data.get('file', None):
+            # pdb.set_trace()
+            value = obj_data['file'].get('download', None)
+            if value and files.get(value, None):
+                try:
+                    content = files[value].read()
+                    obj_data['file']['data'] = content.encode("base64")
+                    obj_data['file']['encoding'] = "base64"
+                except:
+                    error_log += ('''Error in fetching/encoding blob
+                    from zip {}'''.format(obj_data['path']))
 
-            if obj_data.get('file', None):
-                # pdb.set_trace()
-                value = obj_data['file'].get('download', None)
-                if value and files.get(value, None):
-                    try:
-                        content = files[value].read()
-                        obj_data['file']['data'] = content.encode("base64")
-                        obj_data['file']['encoding'] = "base64"
-                    except:
-                        error_log += ('''Error in fetching/encoding blob
-                        from zip {}'''.format(obj_data['path']))
+        if (obj_data.get('text', None) and
+                obj_data['text'].get('content-type', None)):
+            type_ = obj_data['text']['content-type'].split('/')[-1]
+            value = obj_data['text'].get('download', None)
+            if type_ == "html" and value and files.get(value, None):
+                try:
+                    # decoding
+                    file_data = files[value].read().decode(
+                        obj_data['text']['encoding'])
 
-            if (obj_data.get('text', None) and
-                    obj_data['text'].get('content-type', None)):
-                type_ = obj_data['text']['content-type'].split('/')[-1]
-                value = obj_data['text'].get('download', None)
-                if type_ == "html" and value and files.get(value, None):
-                    try:
-                        # decoding
-                        file_data = files[value].read().decode(
-                            obj_data['text']['encoding'])
+                    # replacing old_UID with new_uid
+                    file_data = self.mapping.internallink(file_data)
 
-                        # replacing old_UID with new_uid
-                        file_data = self.mapping.internallink(file_data)
+                    # encoding
+                    file_data = file_data.encode(
+                        obj_data['text']['encoding'])
 
-                        # encoding
-                        file_data = file_data.encode(
-                            obj_data['text']['encoding'])
+                    obj_data['text']['data'] = file_data
 
-                        obj_data['text']['data'] = file_data
+                    del obj_data['text']['download']
+                except:
+                    error_log += ('''Error in fetching/encoding blob
+                    from zip {}'''.format(obj_data['path']))
 
-                        del obj_data['text']['download']
-                    except:
-                        error_log += ('''Error in fetching/encoding blob
-                        from zip {}'''.format(obj_data['path']))
-
-            data[index] = obj_data
-
-        return data, error_log
+        return obj_data, error_log
 
 
 class mapping(object):

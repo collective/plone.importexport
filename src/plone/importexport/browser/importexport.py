@@ -23,6 +23,10 @@ global MUST_EXCLUDED_ATTRIBUTES
 global MUST_INCLUDED_ATTRIBUTES
 global included_attributes
 global excluded_attributes
+global existing_content
+
+# list of existing ids
+existing_content = []
 
 # these attributes must be excluded while exporting
 MUST_EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
@@ -102,6 +106,9 @@ class ImportExportView(BrowserView):
 
     # context == requested object, data=metadata for object in json string
     def deserialize(self, context, data):
+        global existing_content
+
+        # FIXME error logging if path/@type is not present
 
         # pdb.set_trace()
         path = data.get('path', None)
@@ -189,6 +196,7 @@ class ImportExportView(BrowserView):
     # invoke non-existent content,  if any
     def createcontent(self, data):
         # pdb.set_trace()
+        global existing_content
 
         log = ''
         for index in range(len(data)):
@@ -251,7 +259,8 @@ class ImportExportView(BrowserView):
                     except ValueError as e:
                         # self.request.response.setStatus(400)
                         log += 'DeserializationError {}\n'.format(str(e.message))
-
+            elif self.request.get('action',None) and self.request.action == 'ignore':
+                existing_content.append(new_id)
         return log
 
     # requires path list from root
@@ -311,7 +320,7 @@ class ImportExportView(BrowserView):
 
             attribute = []
 
-            # check for advanced tab
+            # check for include/exclude in advanced tab
             if self.request.get('check', None):
                 # pdb.set_trace()
                 if self.request.check == 'exclude':
@@ -339,21 +348,11 @@ class ImportExportView(BrowserView):
                 # filter out undefined keys
                 self.conversion.filter_keys(data, attribute)
 
-
             # invoke non-existent content,  if any
             error_log += self.createcontent(data)
-            # pdb.set_trace()
 
             # map old and new UID in memory
             self.mapping.mapNewUID(data)
-            # pdb.set_trace()
-
-            # get blob content into json data
-            data, temp_log = self.conversion.fillblobintojson(
-                                data, files, self.mapping)
-            # pdb.set_trace()
-
-            error_log += temp_log
 
             # deserialize
             for index in range(len(data)):
@@ -361,10 +360,25 @@ class ImportExportView(BrowserView):
                 # pdb.set_trace()
                 obj_data = data[index]
 
-                # TODO raise the error into log_file
                 if not obj_data.get('path', None):
-                    error_log += 'pathError in {}'.format(obj_data['path'])
+                    error_log += 'pathError in {} \n'.format(obj_data['path'])
                     continue
+
+                if not obj_data.get('@type', None):
+                    error_log += 'typeError in {} \n'.format(obj_data['path'])
+                    continue
+
+                # check for actions in advance tab
+                if self.request.get('action', None) and self.request.action == 'ignore' and obj_data['id'] in existing_content:
+                    error_log += 'Content for {0} already exist \n'.format(obj_data['path'])
+                    continue
+
+                # get blob content into json data
+                obj_data, temp_log = self.conversion.fillblobintojson(
+                obj_data, files, self.mapping)
+                # pdb.set_trace()
+
+                error_log += temp_log
 
                 #  os.sep is preferrable to support multiple filesystem
                 #  return context of object
