@@ -8,84 +8,171 @@ i18n:domain="plone">
 <body>
   <metal:content fill-slot="content-core">
 
-  <div class="pat-autotoc autotabs" data-pat-autotoc="section:fieldset;levels:legend;">
+  <div class="pat-autotoc autotabs" data-pat-autotoc="section:fieldset;
+    levels:legend;">
+
+    <!-- Basic Tab -->
     <fieldset>
       <legend i18n:translate="">Basic</legend>
+
+      <!-- Basic Export -->
       <section>
-        <h2 i18n:translate="">Export</h2>
+
+        <!-- <h2 i18n:translate="">Export</h2> -->
+
         <form action="export" method="POST">
           <input type="submit" name="export" value="Export" i18n:attributes="value" />
         </form>
+
       </section>
+
+      <!-- Basic Import -->
       <section>
-        <h2 i18n:translate="">Import</h2>
+
+        <!-- <input class="pat-pickadate" data-pat-pickadate="time:true"/> -->
         <form action="imports" enctype="multipart/form-data" method="POST">
+          <!-- <h2 i18n:translate="">Import</h2> -->
+          <!--
           <div class="field">
             <div class="formHelp" i18n:translate="import_basic_importfile_help">
               Select a CSV or a ZIP file providing the contents to import.
             </div>
             <input type="file" name="importfile"  />
           </div>
+         -->
+          <div class="pat-upload" data-pat-upload='{
+          "showTitle": "False",
+          "url": "/@@imports",
+          }'>
+          </div>
+
           <input type="submit" name="imports" value="Import" i18n:attributes="value" />
         </form>
       </section>
+
     </fieldset>
+
+    <!-- Advance Tab -->
     <fieldset>
-      <legend i18n:translate="">Advanced</legend>
-      <section>
+      <legend i18n:translate="">Advance</legend>
+
+      <div class="pat-autotoc autotabs" data-pat-autotoc="section:subfieldset;
+        levels:h2;">
+
+      <!-- Advance Export -->
+      <subfieldset>
         <h2 i18n:translate="">Export</h2>
+
         <form action="export" method="POST">
-           <input type="radio" name="check" value="exclude"/> Exclude<br>
-          <div class="formHelp">
-            Specify attributes to be <b>excluded</b> from export with a comma separated value. <br>
-            For Ex:- subjects,contributors.... <strong>Caution</strong>: no space or UPPERCASE
-          </div>
-          <input type='text' name='excluded_attributes'>
+
+          <label> Specify Export type </label>
           <br>
-            <input type="radio" name="check" value="include"/> Includes
+
+          <input type="radio" name="exportFormat" value="csv" >
+            Only csv
+          </input>
+
+          <input type="radio" name="exportFormat" value="files" >
+            Only files
+          </input>
+
+          <input type="radio" name="exportFormat" value="combined" checked="checked">
+            Combined
+          </input>
+
           <br>
-          <div class="formHelp">
-            Specify attributes to be exported with a comma separated value. <u>If not specified all the atributes will be exported</u> <br>
-            For Ex:- subjects,contributors.... <strong>Caution</strong>: no space or UPPERCASE
-          </div>
-          <input type='text' name='included_attributes'>
-          <input type="submit" name="export" value="Export" i18n:attributes="value" />
+          <br>
+
+          <section class="pat-checklist" data-pat-checklist=".selectAll
+          .deselectAll">
+
+            <div class="functions">
+              <button class="select-all">Select all</button>
+              <button class="deselect-all">Deselect all</button>
+            </div>
+
+            <table style="border:0; width:100%">
+              <tr tal:repeat="val python: view.getExportfields().values()">
+                <td tal:repeat="index python: range(len(val))">
+                  <input type="checkbox" name='fieldname' checked="unchecked"
+                    tal:attributes="name python: val[index]">
+                  <p tal:content="text python: val[index]">
+                    field
+                  </p>
+                  </input>
+                </td>
+              </tr>
+            </table>
+
+          </section>
+
+          <br>
+
+          <input type="submit" name="export" value="Export"
+            i18n:attributes="value" />
+
         </form>
-      </section>
-      <hr>
-      <section>
+
+      </subfieldset>
+
+      <!-- Advance Import -->
+      <subfieldset>
+
         <h2 i18n:translate="">Import</h2>
+
         <form action="imports" enctype="multipart/form-data" method="POST">
-          <input type="radio" name="check" value="exclude"/> Exclude<br>
-          <div class="field">
-            <div class="formHelp">
-              Specify attributes to be <b>excluded</b> while importing with a comma separated value. <br>
-              For Ex:- subjects,contributors.... <strong>Caution</strong>: no space or UPPERCASE
+
+          <section class="pat-checklist" data-pat-checklist=".selectAll
+            .deselectAll">
+
+            <div class="functions">
+              <button class="select-all">Select all</button>
+              <button class="deselect-all">Deselect all</button>
             </div>
-            <input type='text' name='excluded_attributes'>
-            <br>
-              <input type="radio" name="check" value="include"/> Includes
-            <br>
-            <div class="formHelp">
-              Specify attributes to be <b>included</b> while importing with a comma separated value. <br>
-              For Ex:- subjects,contributors.... <strong>Caution</strong>: no space or UPPERCASE
-            </div>
-            <input type='text' name='included_attributes'>
-          </div>
-          <div class="formHelp" i18n:translate="import_basic_importfile_help">
-            Select a CSV or a ZIP file providing the contents to import.
-          </div>
-          <input type="file" name="importfile"  />
-          <div class="formHelp" i18n:translate="import_basic_importfile_help">
-            Action to take if content already exist?
-          </div>
-          <input type='radio' name='action' value='overwrite' checked='checked'> Overwrite
-          <input type='radio' name='action' value='ignore'> Ignore
+
+            <table cellspacing="0" cellpadding="0" border="0'">
+              <tr tal:repeat="val python: view.getImportfields().values()">
+                <td tal:repeat="index python: range(len(val))">
+                  <input type="checkbox" name='fieldname' checked="unchecked"
+                    tal:attributes="name python: val[index]">
+                  <p tal:content="text python: val[index]">
+                    field
+                  </p>
+                  </input>
+                </td>
+              </tr>
+            </table>
+
+          </section>
+
+          <label> Action to take if content already existed?</label>
           <br>
+
+          <input type="radio" name="existAaction" value="Update"
+            checked="checked">
+            Update
+          </input>
+
+          <input type="radio" name="existAaction" value="Ignore" >
+            Ignore
+          </input>
+
+          <input type="radio" name="existAaction" value="new">
+            Create New
+          </input>
+
+          <br>
+          <br>
+
           <input type="submit" name="imports" value="Import" i18n:attributes="value" />
+
         </form>
-      </section>
+
+      </subfieldset>
+
+      </div>
     </fieldset>
+
   </div>
 
   </metal:content>

@@ -63,7 +63,7 @@ class ImportExportView(BrowserView):
                     del data[key]
                     continue
 
-    def serialize(self, obj, path_):
+    def serialize(self, obj=None):
 
         results = []
         # using plone.restapi to serialize
@@ -72,16 +72,7 @@ class ImportExportView(BrowserView):
             return []
         data = serializer()
 
-        # store paths of child object items
-        if 'items' in data.keys():
-            path = []
-            for id_ in data['items']:
-                url_path = urlparse(id_['@id']).path
-                if url_path.startswith('/'):
-                    # restapi path> /Plone/folder while zipfile> Plone/folder
-                    url_path = url_path[1:]
-                path.append(url_path)
-
+        # include/exclude checks
         if self.request.get('check', None):
             if self.request.check == 'exclude':
                 # del excluded_attributes from data
@@ -93,16 +84,83 @@ class ImportExportView(BrowserView):
             # del excluded_attributes from data
             self.exclude_attributes(data)
 
-        data['path'] = path_
+        data['path'] = obj.absolute_url_path()[1:]
+
         if data['@type'] != "Plone Site":
             results = [data]
         for member in obj.objectValues():
             # FIXME: defualt plone config @portal_type?
             if member.portal_type != "Plone Site":
-                results += self.serialize(member, path[0])
-                del path[0]
+                results += self.serialize(member)
         # pdb.set_trace()
         return results
+
+    def getheaders(self, data=None, columns=3):
+
+        if not data:
+            return
+
+        self.conversion = utils.Pipeline()
+        head = self.conversion.getcsvheaders(data)
+
+        headers = filter(lambda head: head not in MUST_INCLUDED_ATTRIBUTES,
+            head)
+
+        matrix = {}
+        # pdb.set_trace()
+
+        count = len(headers)
+        rows = float(count/columns)
+
+        if isinstance(rows, float):
+            rows = int(rows) + 1
+
+        for index in range(rows):
+            if count<1:
+                continue
+            matrix[index] = []
+            for i in range(columns):
+                if count<1:
+                    continue
+                count -= 1
+                matrix[index].append(headers[count])
+
+        return matrix
+
+    # returns fields for context
+    def getExportfields(self):
+
+        global MUST_EXCLUDED_ATTRIBUTES
+        global MUST_INCLUDED_ATTRIBUTES
+        global included_attributes
+        global excluded_attributes
+
+        excluded_attributes = MUST_EXCLUDED_ATTRIBUTES
+
+        data = self.serialize(self.context)
+
+        # pdb.set_trace()
+        # in matrix form
+        matrix = self.getheaders(data=data, columns=4)
+
+        return matrix
+
+    # returns fields for csv file
+    def getImportfields(self):
+
+        # TODO need to implement mechanism to get uploaded file
+        # temp csv_file
+        csv_file = 'P2.csv'
+        csvData = open(csv_file,'r')
+
+        self.conversion = utils.Pipeline()
+
+        # convert csv to json
+        jsonData = self.conversion.converttojson(csvData)
+        # get headers from json_jsonData
+        matrix = self.getheaders(data=jsonData, columns=4)
+
+        return matrix
 
     # context == requested object, data=metadata for object in json string
     def deserialize(self, context, data):
@@ -158,8 +216,7 @@ class ImportExportView(BrowserView):
         if self.request.method == 'POST':
 
             # get id_ of Plone sites
-            url = self.request.URL
-            id_ = urlparse(url).path.split('/')[1]
+            id_ = self.context.absolute_url_path()[1:]
 
             # pdb.set_trace()
             if self.request.get('check', None):
@@ -178,10 +235,11 @@ class ImportExportView(BrowserView):
                     # get unique values in list
                     included_attributes = list(set(include))
             else:
+                excluded_attributes = MUST_EXCLUDED_ATTRIBUTES
                 errorlog = 'No check provided. Thus exporting whole content'
 
             # results is a list of dicts
-            results = self.serialize(self.context, id_)
+            results = self.serialize(self.context)
 
             self.conversion.convertjson(self, results)
 
