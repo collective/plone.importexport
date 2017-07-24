@@ -18,6 +18,7 @@ from urlparse import urlparse
 import fnmatch
 from plone.importexport import utils
 import os
+from plone.importexport.exceptions import ImportExportError
 
 global MUST_EXCLUDED_ATTRIBUTES
 global MUST_INCLUDED_ATTRIBUTES
@@ -39,8 +40,12 @@ class ImportExportView(BrowserView):
     """Import/Export page."""
 
     # del excluded_attributes from data
-    def exclude_attributes(self, data):
+    def exclude_attributes(self, data=None):
+        if not data:
+            raise ImportExportError('Provide Data')
+
         global excluded_attributes
+
         if isinstance(data, dict):
             for key in data.keys():
                 if key in excluded_attributes:
@@ -65,11 +70,19 @@ class ImportExportView(BrowserView):
 
     def serialize(self, obj=None):
 
+        if not obj:
+            raise ImportExportError('Object required to serialize')
+
         results = []
         # using plone.restapi to serialize
-        serializer = queryMultiAdapter((obj, self.request), ISerializeToJson)
+        try:
+            serializer = queryMultiAdapter((obj, self.request), ISerializeToJson)
+        except:
+            raise ImportExportError("Error while quering adapter for serializer")
+
         if not serializer:
-            return []
+            raise ImportExportError('Cannot find any adapter for serializer')
+
         data = serializer()
 
         # include/exclude checks
@@ -84,24 +97,40 @@ class ImportExportView(BrowserView):
             # del excluded_attributes from data
             self.exclude_attributes(data)
 
-        data['path'] = obj.absolute_url_path()[1:]
+        data['path'] = str(obj.absolute_url_path()[1:])
 
-        if data['@type'] != "Plone Site":
+        # record required data
+        if data.get('@type', None) != "Plone Site":
             results = [data]
+
         for member in obj.objectValues():
             # FIXME: defualt plone config @portal_type?
             if member.portal_type != "Plone Site":
-                results += self.serialize(member)
-        # pdb.set_trace()
+                try:
+                    results += self.serialize(member)
+                except ImportExportError as e:
+                    error = e.message + ' for ' + data['path']
+                    raise ImportExportError(error)
+                except :
+                    error = 'Fatal Error for ' + data['path']
+                    raise ImportExportError(error)
         return results
 
-    def getheaders(self, data=None, columns=3):
+    def getheaders(self, data=None, columns=4):
 
         if not data:
-            return
+            raise ImportExportError('Provide Data')
 
-        self.conversion = utils.Pipeline()
-        head = self.conversion.getcsvheaders(data)
+        global MUST_INCLUDED_ATTRIBUTES
+
+        try:
+            conversion = utils.Pipeline()
+            head = conversion.getcsvheaders(data)
+        except ImportExportError as e:
+            raise ImportExportError(e.message)
+        except:
+            raise ImportExportError('Fatal error while getting headers')
+
 
         headers = filter(lambda head: head not in MUST_INCLUDED_ATTRIBUTES,
             head)
@@ -131,17 +160,28 @@ class ImportExportView(BrowserView):
     def getExportfields(self):
 
         global MUST_EXCLUDED_ATTRIBUTES
-        global MUST_INCLUDED_ATTRIBUTES
-        global included_attributes
         global excluded_attributes
 
         excluded_attributes = MUST_EXCLUDED_ATTRIBUTES
 
-        data = self.serialize(self.context)
+        try:
+            data = self.serialize(self.context)
+        except ImportExportError as e:
+            print e.message
+            raise
+        except:
+            print 'Error while serializing'
+            raise
 
-        # pdb.set_trace()
         # in matrix form
-        matrix = self.getheaders(data=data, columns=4)
+        try:
+            matrix = self.getheaders(data=data, columns=4)
+        except ImportExportError as e:
+            print (e.message)
+            raise
+        except:
+            print ('Fatal error in fetching headers')
+            raise
 
         return matrix
 
@@ -153,23 +193,38 @@ class ImportExportView(BrowserView):
         csv_file = 'P2.csv'
         csvData = open(csv_file,'r')
 
-        self.conversion = utils.Pipeline()
-
         # convert csv to json
-        jsonData = self.conversion.converttojson(csvData)
+        try:
+            conversion = utils.Pipeline()
+            jsonData = conversion.converttojson(csvData)
+        except ImportExportError as e:
+            print e.message
+            raise
+        except:
+            print ('Fatal error while converting csvData to jsonData')
+            raise
+
         # get headers from json_jsonData
-        matrix = self.getheaders(data=jsonData, columns=4)
+        try:
+            matrix = self.getheaders(data=jsonData, columns=4)
+        except ImportExportError as e:
+            print (e.message)
+            raise
+        except:
+            print ('Fatal error in fetching headers')
+            raise
 
         return matrix
 
     # context == requested object, data=metadata for object in json string
-    def deserialize(self, context, data):
+    def deserialize(self, context=None, data=None):
+
+        if not context or not data:
+            raise ImportExportError('Provide 2 good attributes')
+
         global existing_content
 
-        # FIXME error logging if path/@type is not present
-
-        # pdb.set_trace()
-        path = data.get('path', None)
+        path = data.get('path')
 
         # restapi expects a string of JSON data
         data = json.dumps(data)
@@ -182,23 +237,24 @@ class ImportExportView(BrowserView):
         zope.interface.directlyProvides(request, IBrowserRequest)
 
         # using plone.restapi to deserialize
-        deserializer = queryMultiAdapter((context, request),
+        try:
+            deserializer = queryMultiAdapter((context, request),
                                          IDeserializeFromJson)
+        except:
+            raise ImportExportError("Error while quering adapter")
 
         try:
             deserializer()
-            # self.request.response.setStatus(201)
             return "Success for {} \n".format(path)
         except DeserializationError as e:
-            # self.request.response.setStatus(400)
-            # pdb.set_trace()
-            return "Got Error {0} {1} \n".format(str(e), path)
+            error = str(e.message + ' for '+ path + '\n')
         except BadRequest as e:
-            # pdb.set_trace()
-            return "Got BadRequest {0} {1} \n".format(str(e), path)
+            error = str(e.message + ' for '+ path + '\n')
+        except ValueError as e:
+            error = str(e.message + ' for '+ path + '\n')
         except:
-            # pdb.set_trace()
-            return "DeserializationError {0} {1} \n".format(str('e'), path)
+            error = str('Fatal Error for '+ path + '\n')
+        return error
 
     def export(self):
 
@@ -206,54 +262,77 @@ class ImportExportView(BrowserView):
         global MUST_INCLUDED_ATTRIBUTES
         global included_attributes
         global excluded_attributes
+        errors = []
 
-        # create zip in memory
-        self.zip = utils.InMemoryZip()
+        try:
+            # create zip in memory
+            self.zip = utils.InMemoryZip()
 
-        # defines Pipeline
-        self.conversion = utils.Pipeline()
+            # defines Pipeline
+            self.conversion = utils.Pipeline()
 
-        if self.request.method == 'POST':
+            if self.request and self.request.method == 'POST':
 
-            # get id_ of Plone sites
-            id_ = self.context.absolute_url_path()[1:]
+                # get id_ of Plone sites
+                id_ = self.context.absolute_url_path()[1:]
 
-            # pdb.set_trace()
-            if self.request.get('check', None):
-                if self.request.check == 'exclude':
-                    # fields/keys to exclude
-                    exclude = self.request.excluded_attributes.split(',')
-                    # FIXME matchcase, filter spaces and other unwanted characters
+                # pdb.set_trace()
+                if self.request.get('check', None):
+                    if self.request.check == 'exclude':
+                        # fields/keys to exclude
+                        exclude = self.request.excluded_attributes.split(',')
+                        # FIXME matchcase, filter spaces and other unwanted characters
 
-                    # get unique values in list
-                    excluded_attributes = list(set(MUST_EXCLUDED_ATTRIBUTES + exclude))
+                        # get unique values in list
+                        excluded_attributes = list(set(MUST_EXCLUDED_ATTRIBUTES + exclude))
 
-                elif self.request.check == 'include':
-                    include = self.request.included_attributes.split(',')
-                    # FIXME matchcase, filter spaces and other unwanted characters
+                    elif self.request.check == 'include':
+                        include = self.request.included_attributes.split(',')
+                        # FIXME matchcase, filter spaces and other unwanted characters
 
-                    # get unique values in list
-                    included_attributes = list(set(include))
+                        # get unique values in list
+                        included_attributes = list(set(include))
+                else:
+                    excluded_attributes = MUST_EXCLUDED_ATTRIBUTES
+                    errorlog = 'No check provided. Thus exporting whole content'
+
+                # results is a list of dicts
+                try:
+                    results = self.serialize(self.context)
+                except ImportExportError as e:
+                    raise ImportExportError(e.message)
+                except:
+                    raise ImportExportError('Error while serializing')
+
+                try:
+                    self.conversion.convertjson(self, results)
+                except ImportExportError as e:
+                    raise ImportExportError(e.message)
+                except:
+                    raise ImportExportError('Error in the Pipeline')
+
+
+                self.request.RESPONSE.setHeader('content-type', 'application/zip')
+                cd = 'attachment; filename=%s.zip' % (id_)
+                self.request.RESPONSE.setHeader('Content-Disposition', cd)
+
+                return self.zip.read()
             else:
-                excluded_attributes = MUST_EXCLUDED_ATTRIBUTES
-                errorlog = 'No check provided. Thus exporting whole content'
+                # pdb.set_trace()
+                raise ImportExportError('Invalid Request')
+        except ImportExportError as e:
+            errors.append(e.message)
+        except:
+            errors.append('Invalid request')
 
-            # results is a list of dicts
-            results = self.serialize(self.context)
-
-            self.conversion.convertjson(self, results)
-
-            self.request.RESPONSE.setHeader('content-type', 'application/zip')
-            cd = 'attachment; filename=%s.zip' % (id_)
-            self.request.RESPONSE.setHeader('Content-Disposition', cd)
-
-            return self.zip.read()
-
-        return
+        return errors
 
     # invoke non-existent content,  if any
-    def createcontent(self, data):
-        # pdb.set_trace()
+    def createcontent(self, data=None):
+
+        if not data:
+            raise ImportExportError('Bad Request')
+
         global existing_content
 
         log = ''
@@ -265,14 +344,23 @@ class ImportExportView(BrowserView):
                 log += 'pathError in {}\n'.format(obj_data['path'])
                 continue
 
-            if not obj_data.get('@type', None):
-                log += 'typeError in {}\n'.format(obj_data['path'])
+            #  os.sep is preferrable to support multiple filesystem
+            #  return parent of context
+            try:
+                obj = self.getobjcontext(
+                    obj_data['path'].split(os.sep)[:-1])
+            except ImportExportError as e:
+                log += e.message + 'for {}\n'.format(
+                    obj_data['path'])
+                continue
+
+            if not obj:
+                log += 'Parent object not found for {}\n'.format(
+                    obj_data['path'])
                 continue
 
             id_ = obj_data.get('id', None)
-            type_ = obj_data.get('@type', None)
             title = obj_data.get('title', None)
-            path = obj_data.get('path', None)
 
             # creating  random id
             if not id_:
@@ -287,21 +375,16 @@ class ImportExportView(BrowserView):
             else:
                 new_id = id_
 
-            #  os.sep is preferrable to support multiple filesystem
-            #  return parent of context
-            obj = self.getobjcontext(
-                obj_data['path'].split(os.sep)[:-1])
-
-            if not obj:
-                log += 'pathError in {}\n'.format(
-                    obj_data['path'])
-                continue
-
             # check if context exist
             if not obj.get(new_id, None):
 
                     log += 'creating new object {}\n'.format(
                         obj_data['path'].split(os.sep)[-1])
+
+                    if not obj_data.get('@type', None):
+                        log += 'typeError in {}\n'.format(obj_data['path'])
+                        continue
+                    type_ = obj_data.get('@type', None)
 
                     # Create object
                     try:
@@ -313,19 +396,26 @@ class ImportExportView(BrowserView):
                         new_id = obj.invokeFactory(type_, new_id, title=title)
                     except BadRequest as e:
                         # self.request.response.setStatus(400)
-                        log += 'DeserializationError {}\n'.format(str(e.message))
+                        log += 'BadRequest {}\n'.format(str(e.message))
                     except ValueError as e:
                         # self.request.response.setStatus(400)
-                        log += 'DeserializationError {}\n'.format(str(e.message))
+                        log += 'ValueError {}\n'.format(str(e.message))
+
             elif self.request.get('action',None) and self.request.action == 'ignore':
                 existing_content.append(new_id)
+
         return log
 
     # requires path list from root
     def getobjcontext(self, path):
-        obj = self.context
+
+        try:
+            obj = self.context
+        except:
+            raise ImportExportError('Bad Request')
 
         # FIXME raise error in log_file if element not present in site,
+
         # traversing to the desired folder
         for element in path[1:]:
             try:
@@ -340,116 +430,116 @@ class ImportExportView(BrowserView):
         global MUST_EXCLUDED_ATTRIBUTES
         global MUST_INCLUDED_ATTRIBUTES
 
-        # create zip in memory
-        self.zip = utils.InMemoryZip()
+        try:
 
-        # defines Pipeline
-        self.conversion = utils.Pipeline()
+            if self.request.method == 'POST':
 
-        # defines mapping for UID
-        self.mapping = utils.mapping(self)
+                # create zip in memory
+                self.zip = utils.InMemoryZip()
 
-        error_log = ''
-        temp_log = ''
-        # get file from form
-        zip_file = self.request.get('importfile', None)
+                # defines Pipeline
+                self.conversion = utils.Pipeline()
 
-        if zip_file is None:
-            error_log += 'No file provided'
+                # defines mapping for UID
+                self.mapping = utils.mapping(self)
 
-        # TODO validate zip_file,files,csv_file
-        if self.request.method == 'POST' and zip_file is not None:
+                error_log = ''
+                temp_log = ''
 
-            # unzip zip file
-            files = self.zip.getfiles(zip_file)
+                # get file from form
+                zip_file = self.request.get('importfile', None)
 
-            if not files:
-                error_log += 'Please provide a good zip file'
+                # unzip zip file
+                files = self.zip.getfiles(zip_file)
 
-            # get name of csv file
-            for key in files.keys():
-                if fnmatch.fnmatch(key, '*/*'):
-                    pass
-                elif fnmatch.fnmatch(key, '*.csv'):
-                    csv_file = key
+                # get name of csv file
+                for key in files.keys():
+                    if fnmatch.fnmatch(key, '*/*'):
+                        pass
+                    elif fnmatch.fnmatch(key, '*.csv'):
+                        csv_file = key
 
-            # convert csv to json
-            data = self.conversion.converttojson(files[csv_file])
+                # convert csv to json
+                data = self.conversion.converttojson(files[csv_file])
 
-            attribute = []
+                attribute = []
 
-            # check for include/exclude in advanced tab
-            if self.request.get('check', None):
-                # pdb.set_trace()
-                if self.request.check == 'exclude':
-                    # fields/keys to exclude
-                    exclude = self.request.excluded_attributes.split(',')
-                    # FIXME matchcase, filter spaces and other unwanted characters
+                # check for include/exclude in advanced tab
+                if self.request.get('check', None):
+                    # pdb.set_trace()
+                    if self.request.check == 'exclude':
+                        # fields/keys to exclude
+                        exclude = self.request.excluded_attributes.split(',')
+                        # FIXME matchcase, filter spaces and other unwanted characters
 
-                    # check to include MUST_INCLUDED_ATTRIBUTES in import file
-                    attribute = filter(lambda x: x not in MUST_INCLUDED_ATTRIBUTES, exclude)
+                        # check to include MUST_INCLUDED_ATTRIBUTES in import file
+                        attribute = filter(lambda x: x not in MUST_INCLUDED_ATTRIBUTES, exclude)
 
-                    # filter out keys
+                        # filter out keys
+                        self.conversion.filter_keys(data, attribute)
+
+                    elif self.request.check == 'include':
+                        include = self.request.included_attributes.split(',')
+                        # FIXME matchcase, filter spaces and other unwanted characters
+
+                        included_attributes = list(set(MUST_INCLUDED_ATTRIBUTES + include))
+
+                        # include only certain keys
+                        self.conversion.include_keys(data, included_attributes)
+
+                else:
+                    errorlog = 'No check provided. Thus importing whole content'
+                    # filter out undefined keys
                     self.conversion.filter_keys(data, attribute)
 
-                elif self.request.check == 'include':
-                    include = self.request.included_attributes.split(',')
-                    # FIXME matchcase, filter spaces and other unwanted characters
+                # invoke non-existent content,  if any
+                error_log += self.createcontent(data)
 
-                    included_attributes = list(set(MUST_INCLUDED_ATTRIBUTES + include))
+                # map old and new UID in memory
+                self.mapping.mapNewUID(data)
 
-                    # include only certain keys
-                    self.conversion.include_keys(data, included_attributes)
+                # deserialize
+                for index in range(len(data)):
+
+                    # pdb.set_trace()
+                    obj_data = data[index]
+
+                    if not obj_data.get('path', None):
+                        error_log += 'pathError in {} \n'.format(obj_data['path'])
+                        continue
+
+                    # check for actions in advance tab
+                    if self.request.get('action', None) and self.request.action == 'ignore' and obj_data['id'] in existing_content:
+                        error_log += 'Content for {0} already exist \n'.format(obj_data['path'])
+                        continue
+
+                    # get blob content into json data
+                    obj_data, temp_log = self.conversion.fillblobintojson(
+                    obj_data, files, self.mapping)
+                    # pdb.set_trace()
+
+                    error_log += temp_log
+
+                    #  os.sep is preferrable to support multiple filesystem
+                    #  return context of object
+                    object_context = self.getobjcontext(
+                        obj_data['path'].split(os.sep))
+
+                    # all import error will be logged back
+                    if object_context:
+                        error_log += self.deserialize(object_context, obj_data)
+                    else:
+                        error_log += 'pathError for {}\n'.format(obj_data['path'])
+
+                self.request.RESPONSE.setHeader(
+                    'content-type', 'application/text; charset=utf-8')
+
+                return error_log
 
             else:
-                errorlog = 'No check provided. Thus importing whole content'
-                # filter out undefined keys
-                self.conversion.filter_keys(data, attribute)
+                raise ImportExportError('Invalid Request Method')
 
-            # invoke non-existent content,  if any
-            error_log += self.createcontent(data)
-
-            # map old and new UID in memory
-            self.mapping.mapNewUID(data)
-
-            # deserialize
-            for index in range(len(data)):
-
-                # pdb.set_trace()
-                obj_data = data[index]
-
-                if not obj_data.get('path', None):
-                    error_log += 'pathError in {} \n'.format(obj_data['path'])
-                    continue
-
-                if not obj_data.get('@type', None):
-                    error_log += 'typeError in {} \n'.format(obj_data['path'])
-                    continue
-
-                # check for actions in advance tab
-                if self.request.get('action', None) and self.request.action == 'ignore' and obj_data['id'] in existing_content:
-                    error_log += 'Content for {0} already exist \n'.format(obj_data['path'])
-                    continue
-
-                # get blob content into json data
-                obj_data, temp_log = self.conversion.fillblobintojson(
-                obj_data, files, self.mapping)
-                # pdb.set_trace()
-
-                error_log += temp_log
-
-                #  os.sep is preferrable to support multiple filesystem
-                #  return context of object
-                object_context = self.getobjcontext(
-                    obj_data['path'].split(os.sep))
-
-                # all import error will be logged back
-                if object_context:
-                    error_log += self.deserialize(object_context, obj_data)
-                else:
-                    error_log += 'pathError for {}'.format(obj_data['path'])
-
-        self.request.RESPONSE.setHeader(
-            'content-type', 'application/text; charset=utf-8')
-
-        return error_log
+        except ImportExportError as e:
+            return e.message
+        except:
+            return 'Bad Request'

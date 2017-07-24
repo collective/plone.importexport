@@ -8,6 +8,7 @@ import operator
 import json
 import pdb
 from plone.uuid.interfaces import IUUID
+from plone.importexport.exceptions import ImportExportError
 
 
 class InMemoryZip(object):
@@ -40,6 +41,10 @@ class InMemoryZip(object):
         return self.in_memory_zip.read()
 
     def getfiles(self, zip_file):
+        #TODO validate zip_file,files,csv_file and raise if not good file
+        # TODO also for csv check MUST_INCLUDED_ATTRIBUTES
+        if not zip_file:
+            raise ImportExportError('No file Provided')
         data = {}
         '''The problem in the standard zipfile module is that when passed
         a file object (not a filename), it uses that same passed-in file
@@ -69,8 +74,12 @@ class InMemoryZip(object):
 class Pipeline(object):
 
     # return unique keys from list
-    def getcsvheaders(self, data):
-        # HACK to keep these fields at first in csv
+    def getcsvheaders(self, data=None):
+
+        if not data:
+            raise ImportExportError("Provide data to retrive headers")
+
+        # HACK to keep these fields at top in csv
         header = {'@type': 333, 'path': 222, 'id': 111, 'title': 100}
         for dict_ in data:
             for key in dict_.keys():
@@ -179,7 +188,10 @@ class Pipeline(object):
 
         return
 
-    def converttojson(self, data):
+    def converttojson(self, data=None):
+        if not data:
+            raise ImportExportError("Provide data to jsonify")
+
         reader = csv.DictReader(data)
         data = []
         for row in reader:
@@ -204,7 +216,7 @@ class Pipeline(object):
         finally:
             return data
 
-    def filter_keys(self, data, excluded):
+    def filter_keys(self, data=None, excluded=None):
         if isinstance(data, list):
             for index in range(len(data)):
                 self.filter_keys(data[index], excluded)
@@ -287,7 +299,9 @@ class Pipeline(object):
 
 class mapping(object):
 
-    def __init__(self, obj):
+    def __init__(self, obj=None):
+        if not obj:
+            raise ImportExportError('No obj')
         self.mapping = {}
         self.obj = obj
 
