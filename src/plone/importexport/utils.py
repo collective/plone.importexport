@@ -96,16 +96,17 @@ class Pipeline(object):
         # pdb.set_trace()
         return result
 
-    def convertjson(self, obj, data_list):
+    def convertjson(self, obj, data_list, csv_headers):
         csv_output = cStringIO.StringIO()
 
         url = obj.request.URL
         id_ = urlparse(url).path.split('/')[1]
 
-        csv_headers = self.getcsvheaders(data_list)
-
-        if not csv_headers:
-            raise BadRequest("check json data, no keys found")
+        # check type of export requested
+        if obj.request.get('exportFormat', None):
+            exportType = obj.request.get('exportFormat', None)
+        else:
+            exportType = "combined"
 
         try:
             '''The optional restval parameter specifies the value to be written
@@ -116,77 +117,89 @@ class Pipeline(object):
             raised. If it is set to 'ignore', extra values in the dictionary
             are ignored.'''
             writer = csv.DictWriter(csv_output, fieldnames=csv_headers,
-                                    restval='Field NA', extrasaction='raise',
+                                    restval='Field NA', extrasaction='ignore',
                                     dialect='excel')
             writer.writeheader()
+
             for data in data_list:
                 for key in data.keys():
                     if not data[key]:
                         data[key] = "Null"
-                    if isinstance(data[key], (dict, list)):
 
-                        # store blob content and replace url with path
-                        if (isinstance(data[key], dict) and
-                                data[key].get('download', None)):
-                            # pdb.set_trace()
+                    if exportType=="files" or exportType=="combined":
+                        data[key] = self.getblob(obj, data[key], data['path'])
 
-                            file_path = data['path']
-                            relative_filepath = os.path.join(
-                                *file_path.split('/')[1:])
-
-                            try:
-                                if data[key]['content-type'].split(
-                                            '/')[0] == 'image':
-                                    file_data = obj.context.restrictedTraverse(
-                                        str(relative_filepath)+'/image').data
-                                else:
-                                    file_data = obj.context.restrictedTraverse(
-                                        str(relative_filepath)+'/file').data
-                            except:
-                                print 'Blob data fetching error'
-                            else:
-                                filename = data[key]['filename']
-                                # pdb.set_trace()
-                                data[key]['download'] = os.path.join(
-                                    file_path, filename)
-                                obj.zip.append(data[key]['download'],
-                                               file_data)
-
-                        # '''store html files and replace key[data] with
-                        #     key[download], value= path in zip'''
-                        elif (isinstance(data[key], dict) and
-                                data[key].get('data', None)):
-                            # pdb.set_trace()
-
-                            file_path = data['path']
-
-                            try:
-                                # pdb.set_trace()
-                                if data[key]['content-type'].split(
-                                            '/')[1] == 'html':
-                                    file_data = data[key]['data'].encode(
-                                                    data[key]['encoding'])
-                                    del data[key]['data']
-                            except:
-                                print 'html data fetching error'
-                            else:
-                                filename = file_path.split('/')[-1]+'.html'
-                                data[key]['download'] = os.path.join(
-                                                        file_path, filename)
-                                obj.zip.append(data[key]['download'],
-                                               file_data)
-
-                    # converting list and dict to quoted json
+                   # converting list and dict to quoted json
                     data[key] = json.dumps(data[key])
 
                 writer.writerow(data)
         except IOError as (errno, strerror):
                 print("I/O error({0}): {1}".format(errno, strerror))
         else:
-            obj.zip.append(id_+'.csv', csv_output.getvalue())
+            if exportType=="csv" or exportType=="combined":
+                obj.zip.append(id_+'.csv', csv_output.getvalue())
             csv_output.close()
 
         return
+
+    def getblob(self, obj, data, path_):
+        # pdb.set_trace()
+        # store blob content and replace url with path
+        if (isinstance(data, dict) and
+                data.get('download', None)):
+            # pdb.set_trace()
+
+            file_path = path_
+            relative_filepath = os.path.join(
+                *file_path.split(os.sep)[1:])
+
+            try:
+                # REVIEW does separator for content-type here also depends on os.sep?
+                if data['content-type'].split(
+                            '/')[0] == 'image':
+                    file_data = obj.context.restrictedTraverse(
+                        str(relative_filepath)+os.sep+'image').data
+                else:
+                    file_data = obj.context.restrictedTraverse(
+                        str(relative_filepath)+os.sep+'file').data
+            except:
+                print 'Blob data fetching error'
+            else:
+                filename = data['filename']
+                # pdb.set_trace()
+                data['download'] = os.path.join(
+                    file_path, filename)
+                obj.zip.append(data['download'],
+                               file_data)
+
+                # pdb.set_trace()
+        # '''store html files and replace key[data] with
+        #     key[download], value= path in zip'''
+        elif (isinstance(data, dict) and
+                data.get('data', None)):
+            # pdb.set_trace()
+
+            file_path = path_
+
+            try:
+                # pdb.set_trace()
+                # REVIEW does separator for content-type here also depends on os.sep?
+                if data['content-type'].split(
+                            '/')[1] == 'html':
+                    file_data = data['data'].encode(
+                                    data['encoding'])
+                    del data['data']
+            except:
+                print 'html data fetching error'
+            else:
+                filename = file_path.split(os.sep)[-1]+'.html'
+                data['download'] = os.path.join(
+                                        file_path, filename)
+                obj.zip.append(data['download'],
+                               file_data)
+                # pdb.set_trace()
+
+        return data
 
     def converttojson(self, data=None):
         if not data:

@@ -50,21 +50,15 @@ class ImportExportView(BrowserView):
         # self.uploadedfile = 'None'
         # print "initiated"
 
+    # this will del MUST_EXCLUDED_ATTRIBUTES from data till leaves of the tree
     def exclude_attributes(self, data=None):
         if not data:
             raise ImportExportError('Provide Data')
-
-        global included_attributes
 
         if isinstance(data, dict):
             for key in data.keys():
 
                 if key in MUST_EXCLUDED_ATTRIBUTES:
-                    del data[key]
-                    continue
-
-                # included_attributes are the ones which only have to exported while exporting
-                if included_attributes and key not in included_attributes:
                     del data[key]
                     continue
 
@@ -94,6 +88,8 @@ class ImportExportView(BrowserView):
 
         # del a few unwanted keys from data
         self.exclude_attributes(data)
+        # # allow only included_attributes in data
+        # self.include_attributes(data)
 
         data['path'] = str(obj.absolute_url_path()[1:])
 
@@ -156,7 +152,6 @@ class ImportExportView(BrowserView):
 
     def export(self):
 
-        global included_attributes
         global MUST_INCLUDED_ATTRIBUTES
         errors = []
         try:
@@ -172,7 +167,9 @@ class ImportExportView(BrowserView):
                 id_ = self.context.absolute_url_path()[1:]
 
                 # pdb.set_trace()
-                if self.request.get('fields', None):
+                exportType = self.request.get('exportFormat', None)
+
+                if self.request.get('fields', None) and (exportType=='csv' or exportType=='combined'):
 
                     # fields/keys to include
                     included_attributes = self.request.get('fields', None)
@@ -195,9 +192,9 @@ class ImportExportView(BrowserView):
                     raise ImportExportError(e.message)
                 except:
                     raise ImportExportError('Error while serializing')
-
+                # pdb.set_trace()
                 try:
-                    self.conversion.convertjson(self, results)
+                    self.conversion.convertjson(self, results, included_attributes)
                 except ImportExportError as e:
                     raise ImportExportError(e.message)
                 except:
@@ -425,7 +422,7 @@ class ImportExportView(BrowserView):
                     else:
                         error_log += 'pathError for {}\n'.format(obj_data['path'])
 
-                pdb.set_trace()
+                # pdb.set_trace()
 
                 # self.request.RESPONSE.setHeader('content-type','application/text; charset=utf-8')
                 #
@@ -521,7 +518,7 @@ class ImportExportView(BrowserView):
 
         # TODO need to implement mechanism to get uploaded file
         # temp csv_file
-        csv_file = 'P2.csv'
+        csv_file = 'browser/P2.csv'
         csvData = open(csv_file,'r')
 
         # convert csv to json
