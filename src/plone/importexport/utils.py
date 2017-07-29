@@ -80,7 +80,7 @@ class Pipeline(object):
             raise ImportExportError("Provide data to retrive headers")
 
         # HACK to keep these fields at top in csv
-        header = {'@type': 333, 'path': 222, 'id': 111, 'title': 100}
+        header = {'@type': 333, 'path': 222, 'id': 111, 'UID': 100}
         for dict_ in data:
             for key in dict_.keys():
                 if key not in header.keys():
