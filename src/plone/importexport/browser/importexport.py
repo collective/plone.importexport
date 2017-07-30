@@ -22,7 +22,6 @@ from plone.importexport.exceptions import ImportExportError
 
 global MUST_EXCLUDED_ATTRIBUTES
 global MUST_INCLUDED_ATTRIBUTES
-global included_attributes
 global existing_content
 # global uploadedfile
 #
@@ -30,7 +29,6 @@ global existing_content
 
 # list of existing ids
 existing_content = []
-included_attributes = []
 
 # these attributes must be excluded while exporting
 MUST_EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
@@ -86,10 +84,8 @@ class ImportExportView(BrowserView):
 
         data = serializer()
 
-        # del a few unwanted keys from data
+        # del MUST_EXCLUDED_ATTRIBUTES from data
         self.exclude_attributes(data)
-        # # allow only included_attributes in data
-        # self.include_attributes(data)
 
         data['path'] = str(obj.absolute_url_path()[1:])
 
@@ -172,18 +168,18 @@ class ImportExportView(BrowserView):
                 if self.request.get('fields', None) and (exportType=='csv' or exportType=='combined'):
 
                     # fields/keys to include
-                    included_attributes = self.request.get('fields', None)
+                    include = self.request.get('fields', None)
                     # BUG in html checkbox input, which send value as a string if only one value have been checked
-                    if isinstance(included_attributes, str):
-                        included_attributes = [included_attributes]
-                    included_attributes = list(set(MUST_INCLUDED_ATTRIBUTES +
-                        included_attributes))
+                    if isinstance(include, str):
+                        include = [include]
+                    include = list(set(MUST_INCLUDED_ATTRIBUTES +
+                        include))
 
                 else:
                     # 'No check provided. Thus exporting whole content'
-                    included_attributes = self.getheaders()
-                    included_attributes = list(set(MUST_INCLUDED_ATTRIBUTES +
-                        included_attributes))
+                    include = self.getheaders()
+                    include = list(set(MUST_INCLUDED_ATTRIBUTES +
+                        include))
 
                 # results is a list of dicts
                 try:
@@ -205,7 +201,6 @@ class ImportExportView(BrowserView):
                 cd = 'attachment; filename=%s.zip' % (id_)
                 self.request.RESPONSE.setHeader('Content-Disposition', cd)
 
-                included_attributes = []
                 return self.zip.read()
             else:
                 # pdb.set_trace()
@@ -215,7 +210,6 @@ class ImportExportView(BrowserView):
         except:
             errors.append('Invalid request')
 
-        included_attributes = []
         return errors
 
     # invoke non-existent content,  if any
@@ -350,39 +344,26 @@ class ImportExportView(BrowserView):
                     elif fnmatch.fnmatch(key, '*.csv'):
                         csv_file = key
 
-                # convert csv to json
-                data = self.conversion.converttojson(files[csv_file])
+                # check for include attributes in advanced tab
+                if self.request.get('fields', None):
 
-                attribute = []
-
-                # check for include/exclude in advanced tab
-                if self.request.get('check', None):
-                    # pdb.set_trace()
-                    if self.request.check == 'exclude':
-                        # fields/keys to exclude
-                        exclude = self.request.excluded_attributes.split(',')
-                        # FIXME matchcase, filter spaces and other unwanted characters
-
-                        # check to include MUST_INCLUDED_ATTRIBUTES in import file
-                        attribute = filter(lambda x: x not in MUST_INCLUDED_ATTRIBUTES, exclude)
-
-                        # filter out keys
-                        self.conversion.filter_keys(data, attribute)
-
-                    elif self.request.check == 'include':
-                        include = self.request.included_attributes.split(',')
-                        # FIXME matchcase, filter spaces and other unwanted characters
-
-                        included_attributes = list(set(MUST_INCLUDED_ATTRIBUTES + include))
-
-                        # include only certain keys
-                        self.conversion.include_keys(data, included_attributes)
+                    # fields/keys to include
+                    include = self.request.get('fields', None)
+                    # BUG in html checkbox input, which send value as a
+                    #  string if only one value have been checked
+                    if isinstance(include, str):
+                        include = [include]
+                    include = list(set(MUST_INCLUDED_ATTRIBUTES +
+                        include))
 
                 else:
-                    errorlog = 'No check provided. Thus importing whole content'
-                    # filter out undefined keys
-                    self.conversion.filter_keys(data, attribute)
+                    # 'No check provided. Thus exporting whole content'
+                    include = None
 
+                # convert csv to json
+                data = self.conversion.converttojson(data=files[csv_file],
+                 header=include)
+                # pdb.set_trace()
                 # invoke non-existent content,  if any
                 error_log += self.createcontent(data)
 
@@ -443,7 +424,6 @@ class ImportExportView(BrowserView):
             return self.exportHeaders
 
         global MUST_EXCLUDED_ATTRIBUTES
-
 
         try:
             data = self.serialize(self.context)
@@ -516,6 +496,7 @@ class ImportExportView(BrowserView):
     # returns headers of imported csv file
     def getImportfields(self):
 
+        global MUST_INCLUDED_ATTRIBUTES
         # TODO need to implement mechanism to get uploaded file
         # temp csv_file
         csv_file = 'browser/P2.csv'
@@ -523,8 +504,9 @@ class ImportExportView(BrowserView):
 
         # convert csv to json
         try:
+            # pdb.set_trace()
             conversion = utils.Pipeline()
-            jsonData = conversion.converttojson(csvData)
+            jsonData = conversion.converttojson(data=csvData)
             # pdb.set_trace()
             headers = conversion.getcsvheaders(jsonData)
         except ImportExportError as e:
@@ -533,6 +515,9 @@ class ImportExportView(BrowserView):
         except:
             print ('Fatal error while converting csvData to jsonData')
             raise
+
+        headers = filter(lambda headers: headers not in MUST_INCLUDED_ATTRIBUTES,
+            headers)
 
         # get matrix of headers
         try:

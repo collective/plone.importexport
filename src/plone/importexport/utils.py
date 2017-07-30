@@ -201,13 +201,16 @@ class Pipeline(object):
 
         return data
 
-    def converttojson(self, data=None):
+    def converttojson(self, data=None, header=None):
         if not data:
             raise ImportExportError("Provide data to jsonify")
-
-        reader = csv.DictReader(data)
+        # pdb.set_trace()
+        reader = csv.DictReader(data, fieldnames=header)
         data = []
         for row in reader:
+            for key in row.keys():
+                if not key:
+                    del row[key]
             data.append(row)
         # jsonify quoted json values
         data = self.jsonify(data)
