@@ -19,16 +19,17 @@ import fnmatch
 from plone.importexport import utils
 import os
 from plone.importexport.exceptions import ImportExportError
+from plone.uuid.interfaces import IUUID
 
 global MUST_EXCLUDED_ATTRIBUTES
 global MUST_INCLUDED_ATTRIBUTES
-global existing_content
+global existingUUID
 # global uploadedfile
 #
 # uploadedfile = 'test'
 
 # list of existing ids
-existing_content = []
+existingUUID = []
 
 # these attributes must be excluded while exporting
 MUST_EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
@@ -107,14 +108,19 @@ class ImportExportView(BrowserView):
         return results
 
     # context == requested object, data=metadata for object in json string
+    # existing content are identified by path and ignored if requested
     def deserialize(self, context=None, data=None):
 
         if not context or not data:
             raise ImportExportError('Provide 2 good attributes')
 
-        global existing_content
+        global existingUUID
 
+        UUID = IUUID(context, None)
         path = data.get('path')
+
+        if self.request.get('actionExist', None)=='ignore' and (UUID in existingUUID):
+            return 'Ignoring existing content at {} \n'.format(path)
 
         # restapi expects a string of JSON data
         data = json.dumps(data)
@@ -218,8 +224,6 @@ class ImportExportView(BrowserView):
         if not data:
             raise ImportExportError('Bad Request')
 
-        global existing_content
-
         log = ''
         for index in range(len(data)):
 
@@ -286,10 +290,23 @@ class ImportExportView(BrowserView):
                         # self.request.response.setStatus(400)
                         log += 'ValueError {}\n'.format(str(e.message))
 
-            elif self.request.get('action',None) and self.request.action == 'ignore':
-                existing_content.append(new_id)
-
         return log
+
+    # get list of UUID for existing_content @var existingUUID
+    def getExistingcontent(self, context=None):
+
+        if not context:
+            context = self.context
+        global existingUUID
+
+        if context.portal_type != "Plone Site":
+            existingUUID.append(IUUID(context, None))
+            # existingUUID.append(str(context))
+
+        for member in context.objectValues():
+            # FIXME: defualt plone config @portal_type?
+            if member.portal_type != "Plone Site":
+                    self.getExistingcontent(member)
 
     # requires path list from root
     def getobjcontext(self, path):
@@ -327,6 +344,9 @@ class ImportExportView(BrowserView):
 
                 # defines mapping for UID
                 self.mapping = utils.mapping(self)
+
+                # prepare list of existingUUID
+                self.getExistingcontent()
 
                 error_log = ''
                 temp_log = ''
@@ -378,11 +398,6 @@ class ImportExportView(BrowserView):
 
                     if not obj_data.get('path', None):
                         error_log += 'pathError in {} \n'.format(obj_data['path'])
-                        continue
-
-                    # check for actions in advance tab
-                    if self.request.get('action', None) and self.request.action == 'ignore' and obj_data['id'] in existing_content:
-                        error_log += 'Content for {0} already exist \n'.format(obj_data['path'])
                         continue
 
                     # get blob content into json data

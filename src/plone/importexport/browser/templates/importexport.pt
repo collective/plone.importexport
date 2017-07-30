@@ -154,16 +154,16 @@ i18n:domain="plone">
               <label> Action to take if content already existed?</label>
               <br>
 
-              <input type="radio" name="existAaction" value="Update"
+              <input type="radio" name="actionExist" value="update"
                 checked="checked">
                 Update
               </input>
 
-              <input type="radio" name="existAaction" value="Ignore" >
+              <input type="radio" name="actionExist" value="ignore" >
                 Ignore
               </input>
 
-              <input type="radio" name="existAaction" value="new">
+              <input type="radio" name="actionExist" value="new">
                 Create New
               </input>
 
