@@ -19,17 +19,16 @@ import fnmatch
 from plone.importexport import utils
 import os
 from plone.importexport.exceptions import ImportExportError
-from plone.uuid.interfaces import IUUID
 
 global MUST_EXCLUDED_ATTRIBUTES
 global MUST_INCLUDED_ATTRIBUTES
-global existingUUID
+# global files
+
+# files = {}
 # global uploadedfile
 #
 # uploadedfile = 'test'
 
-# list of existing ids
-existingUUID = []
 
 # these attributes must be excluded while exporting
 MUST_EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
@@ -46,6 +45,9 @@ class ImportExportView(BrowserView):
         self.request = request
         self.exportHeaders = None
         self.importHeaders = None
+        self.existingPath = []
+        self.files = {}
+        # pdb.set_trace()
         # self.uploadedfile = 'None'
         # print "initiated"
 
@@ -114,12 +116,9 @@ class ImportExportView(BrowserView):
         if not context or not data:
             raise ImportExportError('Provide 2 good attributes')
 
-        global existingUUID
+        path = str(context.absolute_url_path()[1:])
 
-        UUID = IUUID(context, None)
-        path = data.get('path')
-
-        if self.request.get('actionExist', None)=='ignore' and (UUID in existingUUID):
+        if self.request.get('actionExist', None)=='ignore' and (path in self.existingPath):
             return 'Ignoring existing content at {} \n'.format(path)
 
         # restapi expects a string of JSON data
@@ -196,7 +195,7 @@ class ImportExportView(BrowserView):
                     raise ImportExportError('Error while serializing')
                 # pdb.set_trace()
                 try:
-                    self.conversion.convertjson(self, results, included_attributes)
+                    self.conversion.convertjson(self, results, include)
                 except ImportExportError as e:
                     raise ImportExportError(e.message)
                 except:
@@ -292,21 +291,58 @@ class ImportExportView(BrowserView):
 
         return log
 
-    # get list of UUID for existing_content @var existingUUID
-    def getExistingcontent(self, context=None):
+    # get list of existingPath
+    def getExistingpath(self, context=None):
 
         if not context:
             context = self.context
-        global existingUUID
+            self.existingPath = []
 
         if context.portal_type != "Plone Site":
-            existingUUID.append(IUUID(context, None))
-            # existingUUID.append(str(context))
+            self.existingPath.append(str(context.absolute_url_path()[1:]))
+            # self.existingPath.append(str(context))
 
         for member in context.objectValues():
             # FIXME: defualt plone config @portal_type?
             if member.portal_type != "Plone Site":
-                    self.getExistingcontent(member)
+                    self.getExistingpath(member)
+
+    #  provide list of path that occured in Plone server and uploaded csv
+    def getCommanpath(self, dataPath=None):
+
+        if not dataPath:
+            raise ImportExportError('Provide dataPath to compare')
+
+        comman = []
+
+        # get list of existingPath
+        self.getExistingpath()
+
+        for path in dataPath:
+            if path in self.existingPath:
+                comman.append(path)
+
+        return comman
+
+    # if creating new content against existing content
+    def getCommancontent(self):
+
+        # TODO get uploaded csv_file from advanced tab onClick
+        if not self.files:
+            return
+
+        csv_file = self.files.getCsv()
+
+        # get path form csv_file
+        conversion = utils.Pipeline()
+        jsonList = conversion.converttojson(data=csv_file, header=['path'])
+
+        for element in jsonList:
+            path_.append(element.get('path', None))
+
+        comman_path = self.getCommanpath(path_)
+
+        return comman_path
 
     # requires path list from root
     def getobjcontext(self, path):
@@ -327,14 +363,49 @@ class ImportExportView(BrowserView):
 
         return obj
 
+    def requestFile(self, file_=None):
+        if not file_ :
+            raise ImportExportError("Provide File")
+
+        if isinstance(file_, list):
+            for element in file_:
+                    self.requestFile(element)
+
+        else:
+            file_.seek(0)
+            if not file_.read():
+                raise ImportExportError("Provide File")
+            type_ =  file_.headers.values()[0].split('/')[-1]
+            file_.seek(0)
+            filename =  file_.filename
+            # pdb.set_trace()
+            # analyse = utils.fileAnalyse()
+            # type_ = analyse.getFiletype(file_)
+
+            self.files[filename] = {"file":file_ ,"type": type_, 'name':filename}
+            return True
+
     def imports(self):
 
         global MUST_EXCLUDED_ATTRIBUTES
         global MUST_INCLUDED_ATTRIBUTES
+        # global files
 
         try:
-
+            # pdb.set_trace()
             if self.request.method == 'POST':
+
+                # request files
+                file_ = self.request.get('file')
+                # files are at self.files
+                self.requestFile(file_)
+
+                # pdb.set_trace()
+                # file structure and analyser
+                self.files = utils.fileAnalyse(self.files)
+
+                if not self.files.getCsv():
+                    raise ImportExportError('Provide a good csv file')
 
                 # create zip in memory
                 self.zip = utils.InMemoryZip()
@@ -345,24 +416,11 @@ class ImportExportView(BrowserView):
                 # defines mapping for UID
                 self.mapping = utils.mapping(self)
 
-                # prepare list of existingUUID
-                self.getExistingcontent()
+                # get list of existingPath
+                self.getExistingpath()
 
                 error_log = ''
                 temp_log = ''
-
-                # get file from form
-                zip_file = self.request.get('file', None)
-
-                # unzip zip file
-                files = self.zip.getfiles(zip_file)
-
-                # get name of csv file
-                for key in files.keys():
-                    if fnmatch.fnmatch(key, '*/*'):
-                        pass
-                    elif fnmatch.fnmatch(key, '*.csv'):
-                        csv_file = key
 
                 # check for include attributes in advanced tab
                 if self.request.get('fields', None):
@@ -381,7 +439,7 @@ class ImportExportView(BrowserView):
                     include = None
 
                 # convert csv to json
-                data = self.conversion.converttojson(data=files[csv_file],
+                data = self.conversion.converttojson(self.files.getCsv(),
                  header=include)
                 # pdb.set_trace()
                 # invoke non-existent content,  if any
@@ -402,7 +460,7 @@ class ImportExportView(BrowserView):
 
                     # get blob content into json data
                     obj_data, temp_log = self.conversion.fillblobintojson(
-                    obj_data, files, self.mapping)
+                    obj_data, self.files.getFiles(), self.mapping)
                     # pdb.set_trace()
 
                     error_log += temp_log
@@ -420,16 +478,19 @@ class ImportExportView(BrowserView):
 
                 # pdb.set_trace()
 
+                self.files = {}
                 # self.request.RESPONSE.setHeader('content-type','application/text; charset=utf-8')
-                #
                 print error_log
 
             else:
                 raise ImportExportError('Invalid Request Method')
 
         except ImportExportError as e:
+            self.files = {}
             return e.message
         except:
+            self.files = {}
+            # pdb.set_trace()
             return 'Bad Request'
 
     # return headers of serialized self.context
@@ -517,12 +578,11 @@ class ImportExportView(BrowserView):
         csv_file = 'browser/P2.csv'
         csvData = open(csv_file,'r')
 
-        # convert csv to json
         try:
-            # pdb.set_trace()
+            # convert csv to json
             conversion = utils.Pipeline()
             jsonData = conversion.converttojson(data=csvData)
-            # pdb.set_trace()
+            # get headers from jsonData
             headers = conversion.getcsvheaders(jsonData)
         except ImportExportError as e:
             print e.message
@@ -545,30 +605,3 @@ class ImportExportView(BrowserView):
             raise
 
         return matrix
-
-    #
-    # def fileAnalyse(self):
-    #     pdb.set_trace()
-    #
-    #     # TODO check type of file csv/BLOB
-    #     zip_file = self.request.get('file', None)
-    #
-    #     self.uploadedfile = zip_file
-    #
-    #     # TODO render the template again
-    #     # template = ViewPageTemplateFile('templates/importexport.pt')
-    #     self.index()
-    #
-    #     # FIXME override import_advance template
-    #
-    #
-    # def checkFile(self):
-    #     # global uploadedfile
-    #     if self.uploadedfile:
-    #         return True
-    #     return False
-    #
-    # def setFile(self):
-    #     self.uploadedfile = None
-    #     # FIXME override import_advance template
-    #     return

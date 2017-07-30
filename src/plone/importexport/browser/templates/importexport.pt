@@ -31,20 +31,31 @@ i18n:domain="plone">
 
         <!-- <input class="pat-pickadate" data-pat-pickadate="time:true"/> -->
         <h2 i18n:translate="">Import</h2>
-        <!--
-        <div class="field">
+
+        <!-- <div class="field">
             <div class="formHelp" i18n:translate="import_basic_importfile_help">
             Select a CSV or a ZIP file providing the contents to import.
           </div>
           <input type="file" name="importfile"  />
-        </div>
-        -->
-        <form action="imports" method="POST">
+        </div> -->
+
+        <form action="imports" enctype="multipart/form-data" method="POST">
+           <div class="field">
+             <label for="importfile">File</label>
+             <div class="formHelp" i18n:translate="import_basic_importfile_help">
+               Select a CSV or a ZIP file providing the contents to import.
+             </div>
+             <input type="file" name="file" multiple="multiple" />
+           </div>
+           <input type="submit" name="imports" value="Import" i18n:attributes="value" />
+        </form>
+
+        <!-- <form action="imports" method="POST">
           <div class="pat-upload" data-pat-upload='{
             "showTitle": false
             }'>
           </div>
-        </form>
+        </form> -->
       </section>
 
     </fieldset>
@@ -125,60 +136,71 @@ i18n:domain="plone">
 
             <form action="imports" enctype="multipart/form-data" method="POST">
 
-              <label> Specify fields to import </label>
-              <h5> Defualt fields:{@type, path, id, UID}</h5>
 
-              <section class="pat-checklist" data-pat-checklist=".selectAll
-                .deselectAll">
-
-                <div class="functions">
-                  <button class="select-all">Select all</button>
-                  <button class="deselect-all">Deselect all</button>
+              <div class="field">
+                <label for="importfile">File</label>
+                <div class="formHelp" i18n:translate="import_basic_importfile_help">
+                  Select a CSV or a ZIP file providing the contents to import.
                 </div>
+                <input type="file" name="file" multiple="multiple" />
+              </div>
 
-                <table cellspacing="0" cellpadding="0" border="0'">
-                  <tr tal:repeat="val python: view.getImportfields().values()">
-                    <td tal:repeat="index python: range(len(val))">
-                      <input type="checkbox" name='fields' value='null'
-                        tal:attributes="value python: val[index]">
-                      <p tal:content="text python: val[index]">
-                        field
-                      </p>
-                      </input>
-                    </td>
-                  </tr>
-                </table>
+               <!-- TODO trigger the below div only on uploading file -->
+              <div>
+                <label> Specify fields to import </label>
+                <h5> Defualt fields:{@type, path, id, UID}</h5>
 
-              </section>
+                <section class="pat-checklist" data-pat-checklist=".selectAll
+                  .deselectAll">
 
-              <label> Action to take if content already existed?</label>
-              <br>
+                  <div class="functions">
+                    <button class="select-all">Select all</button>
+                    <button class="deselect-all">Deselect all</button>
+                  </div>
 
-              <input type="radio" name="actionExist" value="update"
-                checked="checked">
-                Update
-              </input>
+                  <table cellspacing="0" cellpadding="0" border="0'">
+                    <tr tal:repeat="val python: view.getImportfields().values()">
+                      <td tal:repeat="index python: range(len(val))">
+                        <input type="checkbox" name='fields' value='null'
+                          tal:attributes="value python: val[index]">
+                        <p tal:content="text python: val[index]">
+                          field
+                        </p>
+                        </input>
+                      </td>
+                    </tr>
+                  </table>
 
-              <input type="radio" name="actionExist" value="ignore" >
-                Ignore
-              </input>
+                </section>
 
-              <input type="radio" name="actionExist" value="new">
-                Create New
-              </input>
+                <label> Action to take if content already existed?</label>
+                <br>
+
+                <input type="radio" name="actionExist" value="update"
+                  checked="checked">
+                  Update
+                </input>
+
+                <input type="radio" name="actionExist" value="ignore" >
+                  Ignore
+                </input>
+
+                <input type="radio" name="actionExist" value="new">
+                  Create New
+                </input>
+              </div>
 
               <br>
               <br>
 
               <input type="submit" name="imports" value="Import" i18n:attributes="value" />
-              <button type="button" onclick=view.setFile()> Re-Upload </button>
+              <!-- <button type="button" onclick=view.setFile()> Re-Upload </button> -->
 
             </form>
 
           </div>
 
-          <div tal:condition="python: exist">
-            <!-- <div tal:condition="python: not exist"> -->
+          <!-- <div tal:condition="python: not exist">
 
             <form action="fileAnalyse" enctype="multipart/form-data" method="POST">
 
@@ -189,7 +211,7 @@ i18n:domain="plone">
 
             </form>
 
-          </div>
+          </div> -->
 
 
       </subfieldset>

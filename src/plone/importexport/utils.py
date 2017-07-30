@@ -9,7 +9,10 @@ import json
 import pdb
 from plone.uuid.interfaces import IUUID
 from plone.importexport.exceptions import ImportExportError
-
+import fnmatch
+# REVIEW stable lib for other OS https://github.com/ahupp/python-magic#dependencies
+# REVIEW should magic be used?
+# import magic
 
 class InMemoryZip(object):
 
@@ -214,6 +217,7 @@ class Pipeline(object):
             data.append(row)
         # jsonify quoted json values
         data = self.jsonify(data)
+        self.filter_keys(data)
         return data
 
     # jsonify quoted json values
@@ -238,18 +242,7 @@ class Pipeline(object):
                 self.filter_keys(data[index], excluded)
         elif isinstance(data, dict):
             for key in data.keys():
-                if data[key] == "Field NA" or data[key] == "Null" or key in excluded:
-                    del data[key]
-
-        return True
-
-    def include_keys(self, data, included):
-        if isinstance(data, list):
-            for index in range(len(data)):
-                self.include_keys(data[index], included)
-        elif isinstance(data, dict):
-            for key in data.keys():
-                if data[key] == "Field NA" or data[key] == "Null" or key not in included:
+                if data[key] == "Field NA" or data[key] == "Null" or (excluded and key in excluded):
                     del data[key]
 
         return True
@@ -356,3 +349,64 @@ class mapping(object):
         for uid in self.mapping.keys():
             data = data.replace(uid, self.mapping[uid])
         return data
+
+
+class fileAnalyse(object):
+
+    def __init__(self, files=None):
+        # pdb.set_trace()
+        if not files:
+            raise ImportExportError('Provide file to analyse')
+        self.files = files
+        self.csv_file = None
+        # unzip the zip and restructure the dict
+        self.reStructure()
+        # TODO if no csv_file then make one dynamically to support uploaded BLOB
+        self.csv_file = self.findcsv()
+
+    def getFiletype(self, type_=None):
+
+        if not type_:
+            raise ImportExportError('Provide type')
+
+        return type_
+
+    # return csv from uploaded files
+    def findcsv(self):
+        # the zip may also have csv content of site
+        ignore = str('*'+ os.sep + '*')
+        for key in self.files.keys():
+            if fnmatch.fnmatch(key, ignore):
+                pass
+            elif fnmatch.fnmatch(key, '*.csv'):
+                    if not self.csv_file:
+                        # pdb.set_trace()
+                        self.csv_file  = self.files[key]
+                    else:
+                        # pdb.set_trace()
+                        raise ImportExportError('Require 1 csv, 2 provided')
+
+        return self.csv_file
+
+    def getCsv(self):
+        return self.csv_file
+
+    # unzip the zip and restructure the dict
+    def reStructure(self):
+        tempFiles = {}
+        for k in self.files.keys():
+            if self.files[k].get('type', None)=='zip':
+                zip_file =  self.files[k]['file']
+                tempzip = InMemoryZip()
+                zip_file = tempzip.getfiles(zip_file)
+                for key in zip_file.keys():
+                    filename = key
+                    file_  = zip_file[key]
+                    tempFiles[filename] = file_
+                del self.files[k]
+            else:
+                self.files[k] =  self.files[k]['file']
+        self.files.update(tempFiles)
+
+    def getFiles(self):
+        return self.files
