@@ -19,6 +19,9 @@ import fnmatch
 from plone.importexport import utils
 import os
 from plone.importexport.exceptions import ImportExportError
+from plone import api
+from plone.api.exc import MissingParameterError
+from plone.api.exc import InvalidParameterError
 
 global MUST_EXCLUDED_ATTRIBUTES
 global MUST_INCLUDED_ATTRIBUTES
@@ -121,6 +124,12 @@ class ImportExportView(BrowserView):
         if self.request.get('actionExist', None)=='ignore' and (path in self.existingPath):
             return 'Ignoring existing content at {} \n'.format(path)
 
+
+        # deserializing review_state
+        new_state = None
+        if data.get('review_state', None):
+            new_state = str(data['review_state'])
+
         # restapi expects a string of JSON data
         data = json.dumps(data)
 
@@ -140,13 +149,22 @@ class ImportExportView(BrowserView):
 
         try:
             deserializer()
+            if new_state:
+                state = str(api.content.get_state(obj=context, default=None))
+                if new_state!=state:
+                    api.content.transition(obj=context, to_state=new_state)
+
             return "Success for {} \n".format(path)
+        except MissingParameterError as e:
+            raise ImportExportError('parameter is missing for review_state')
+        except InvalidParameterError as e:
+            raise ImportExportError('Invalid parameter for review_state')
         except DeserializationError as e:
-            error = str(e.message + ' for '+ path + '\n')
+            error = str(str(e.message) + ' for '+ path + '\n')
         except BadRequest as e:
-            error = str(e.message + ' for '+ path + '\n')
+            error = str(str(e.message) + ' for '+ path + '\n')
         except ValueError as e:
-            error = str(e.message + ' for '+ path + '\n')
+            error = str(str(e.message) + ' for '+ path + '\n')
         except:
             error = str('Fatal Error for '+ path + '\n')
         return error
@@ -392,7 +410,6 @@ class ImportExportView(BrowserView):
         # global files
 
         try:
-            # pdb.set_trace()
             if self.request.method == 'POST':
 
                 # request files
@@ -575,8 +592,9 @@ class ImportExportView(BrowserView):
         global MUST_INCLUDED_ATTRIBUTES
         # TODO need to implement mechanism to get uploaded file
         # temp csv_file
-        csv_file = 'browser/P2.csv'
-        csvData = open(csv_file,'r')
+        # csv_file = 'P2.csv'
+        # csvData = open(csv_file,'r')
+        csvData = 'fieldA, fieldB \n A,B'
 
         try:
             # convert csv to json
