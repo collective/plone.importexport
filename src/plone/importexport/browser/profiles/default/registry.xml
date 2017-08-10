@@ -1,0 +1,4 @@
+<records prefix="plone.resources/browser"
+            interface='Products.CMFPlone.interfaces.IResourceRegistry'>
+      <value key="js">++resource++plone.importexport/script.js</value>
+</records>

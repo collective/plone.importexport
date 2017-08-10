@@ -22,6 +22,7 @@ from plone.importexport.exceptions import ImportExportError
 from plone import api
 from plone.api.exc import MissingParameterError
 from plone.api.exc import InvalidParameterError
+from Products.CMFPlone.resources import add_resource_on_request
 
 global MUST_EXCLUDED_ATTRIBUTES
 global MUST_INCLUDED_ATTRIBUTES
@@ -42,7 +43,7 @@ MUST_INCLUDED_ATTRIBUTES = ['@type', 'path', 'id', 'UID']
 
 class ImportExportView(BrowserView):
     """Import/Export page."""
-
+    template = ViewPageTemplateFile('templates/importexport.pt')
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -54,6 +55,10 @@ class ImportExportView(BrowserView):
         # self.uploadedfile = 'None'
         # print "initiated"
 
+    def __call__(self):
+        add_resource_on_request(self.request, 'plone.importexport')
+        # import pdb; pdb.set_trace()
+        return self.template()
     # this will del MUST_EXCLUDED_ATTRIBUTES from data till leaves of the tree
     def exclude_attributes(self, data=None):
         if not data:

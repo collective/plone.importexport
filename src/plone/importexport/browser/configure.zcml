@@ -15,7 +15,6 @@
         name="import-export"
         class=".importexport.ImportExportView"
         permission="cmf.ModifyPortalContent"
-        template="templates/importexport.pt"
         />
 
     <browser:page

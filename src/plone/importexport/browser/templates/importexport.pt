@@ -11,6 +11,7 @@ i18n:domain="plone">
   <div class="pat-autotoc autotabs" data-pat-autotoc="section:fieldset;
     levels:legend;">
 
+    <h3>Title</h3>
     <!-- Basic Tab -->
     <fieldset>
       <legend i18n:translate="">Basic</legend>
@@ -94,8 +95,7 @@ i18n:domain="plone">
           <label> Specify fields to export </label>
           <h5> Defualt fields:{@type, path, id, UID}</h5>
           <h5> Caution: If nothing is selected, all fields will be exported</h5>
-          <section class="pat-checklist" data-pat-checklist=".selectAll
-          .deselectAll">
+          <section>
 
             <div class="functions">
               <button class="select-all">Select all</button>
@@ -150,8 +150,7 @@ i18n:domain="plone">
                 <label> Specify fields to import </label>
                 <h5> Defualt fields:{@type, path, id, UID}</h5>
 
-                <section class="pat-checklist" data-pat-checklist=".selectAll
-                  .deselectAll">
+                <section>
 
                   <div class="functions">
                     <button class="select-all">Select all</button>
