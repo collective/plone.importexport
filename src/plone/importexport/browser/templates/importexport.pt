@@ -5,6 +5,15 @@ xmlns:i18n="http://xml.zope.org/namespaces/i18n"
 lang="en"
 metal:use-macro="context/main_template/macros/master"
 i18n:domain="plone">
+<head>
+  <!-- <script type="text/javascript" src="//++resource++plone.importexport/import_export.js"></script> -->
+  <script type = "text/JavaScript">
+         function Select() {
+            alert("Hello, World");
+         }
+  </script>
+
+</head>
 <body>
   <metal:content fill-slot="content-core">
 
@@ -22,7 +31,8 @@ i18n:domain="plone">
         <h2 i18n:translate="">Export</h2>
 
         <form action="export" method="POST">
-          <input type="submit" name="export" value="Export" i18n:attributes="value" />
+          <input type="submit" name="export" value="Export"
+            i18n:attributes="value" />
         </form>
 
       </section>
@@ -97,10 +107,10 @@ i18n:domain="plone">
           <h5> Caution: If nothing is selected, all fields will be exported</h5>
           <section>
 
-            <div class="functions">
-              <button class="select-all">Select all</button>
+            <!-- <div class="functions">
+              <button onClick= "Select()" class="select-all">Select all</button>
               <button class="deselect-all">Deselect all</button>
-            </div>
+            </div> -->
 
             <table style="border:0; width:100%">
               <tr tal:repeat="val python: view.getExportfields().values()">
@@ -119,6 +129,8 @@ i18n:domain="plone">
 
           <br>
 
+          <input type = "button" onclick = "Select()" name = "Select" value = "Click Me" />
+          <script> Select();</script>
           <input type="submit" name="export" value="Export"
             i18n:attributes="value" />
 
