@@ -79,11 +79,7 @@ class Pipeline(object):
     # return unique keys from list
     def getcsvheaders(self, data=None):
 
-        if not data:
-            raise ImportExportError("Provide data to retrive headers")
-
-        # HACK to keep these fields at top in csv
-        header = {'@type': 333, 'path': 222, 'id': 111, 'UID': 100}
+        header = {}
         for dict_ in data:
             for key in dict_.keys():
                 if key not in header.keys():
@@ -102,8 +98,7 @@ class Pipeline(object):
     def convertjson(self, obj, data_list, csv_headers):
         csv_output = cStringIO.StringIO()
 
-        url = obj.request.URL
-        id_ = urlparse(url).path.split('/')[1]
+        id_ = obj.context.absolute_url_path()[1:]
 
         # check type of export requested
         if obj.request.get('exportFormat', None):
@@ -364,11 +359,10 @@ class fileAnalyse(object):
         # TODO if no csv_file then make one dynamically to support uploaded BLOB
         self.csv_file = self.findcsv()
 
-    def getFiletype(self, type_=None):
+    def getFiletype(self, filename=None):
 
-        if not type_:
-            raise ImportExportError('Provide type')
-
+        # HACK
+        type_ = filename.split('.')[-1]
         return type_
 
     # return csv from uploaded files
@@ -395,17 +389,14 @@ class fileAnalyse(object):
     def reStructure(self):
         tempFiles = {}
         for k in self.files.keys():
-            if self.files[k].get('type', None)=='zip':
-                zip_file =  self.files[k]['file']
+            type_ = self.getFiletype(k)
+            if type_=='zip':
+                zip_file =  self.files[k]
                 tempzip = InMemoryZip()
                 zip_file = tempzip.getfiles(zip_file)
-                for key in zip_file.keys():
-                    filename = key
-                    file_  = zip_file[key]
-                    tempFiles[filename] = file_
+                for filename in zip_file.keys():
+                    tempFiles[filename] = zip_file[filename]
                 del self.files[k]
-            else:
-                self.files[k] =  self.files[k]['file']
         self.files.update(tempFiles)
 
     def getFiles(self):
