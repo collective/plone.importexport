@@ -6,15 +6,12 @@ lang="en"
 metal:use-macro="context/main_template/macros/master"
 i18n:domain="plone">
 <head>
-  <!-- <script type="text/javascript"
-    src="//++resource++plone.importexport/import_export.js"></script> -->
-  <!-- <script >
-   function Fun() {
-      alert("Hello, World");
-      console.log("Hello");
-   }
-
-  </script> -->
+  <!-- <script type="text/javascript" src="//++resource++plone.importexport/import_export.js"></script> -->
+  <script type = "text/JavaScript">
+         function Select() {
+            alert("Hello, World");
+         }
+  </script>
 
 </head>
 <body>
