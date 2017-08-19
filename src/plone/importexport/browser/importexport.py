@@ -189,10 +189,10 @@ class ImportExportView(BrowserView):
                 # pdb.set_trace()
                 exportType = self.request.get('exportFormat', None)
 
-                if self.request.get('fields', None) and (exportType=='csv' or exportType=='combined'):
+                if self.request.get('exportFields', None) and (exportType=='csv' or exportType=='combined'):
 
                     # fields/keys to include
-                    include = self.request.get('fields', None)
+                    include = self.request.get('exportFields', None)
                     # BUG in html checkbox input, which send value as a string if only one value have been checked
                     if isinstance(include, str):
                         include = [include]
@@ -441,10 +441,10 @@ class ImportExportView(BrowserView):
                 temp_log = ''
 
                 # check for include attributes in advanced tab
-                if self.request.get('fields', None):
+                if self.request.get('importFields', None):
 
                     # fields/keys to include
-                    include = self.request.get('fields', None)
+                    include = self.request.get('importFields', None)
                     # BUG in html checkbox input, which send value as a
                     #  string if only one value have been checked
                     if isinstance(include, str):
