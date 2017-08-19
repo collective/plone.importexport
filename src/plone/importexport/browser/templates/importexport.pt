@@ -179,7 +179,42 @@ i18n:domain="plone">
                 <div class="formHelp" i18n:translate="import_basic_importfile_help">
                   Select a CSV or a ZIP file providing the contents to import.
                 </div>
-                <input type="file" name="file" multiple="multiple" />
+                <input type="file" name="file" multiple="multiple" id="uploadID" />
+
+                <script>
+
+                  var file = document.getElementById("uploadID");
+                  var table = document.getElementById("table");
+
+                  file.onchange = function(){
+                    importfile = file.files;
+                    console.log(importfile);
+
+                    <!-- set importfile in html div data attr, call matrix data from that tal -->
+                    <!-- var data = document.getElementById("setdata");
+                    data.setAttribute("importfile", file.files);
+                    matrix = data.getAttribute("matrix"); -->
+
+                    <!-- or -->
+
+                    <!-- call python function from js -->
+
+
+                    <!-- var html = "<table>";
+                    for (var i in matrix){
+                      html += "<tr>"
+                      for (var j in i){
+                        html += '<td>' + j +"</td>"
+                      }
+                      html += "</tr>"
+                    }
+                    html += "</table>"
+                    table.innerHTML = html -->
+                  };
+
+                </script>
+
+
               </div>
 
                <!-- TODO trigger the below div only on uploading file -->
@@ -193,40 +228,45 @@ i18n:domain="plone">
                     <input type="button" onclick= "selectImport()"  value="Select all"
                       name="Select"/>
                     <input type="button" onclick="deselectImport()" value="Deselect all"
-                      name="Deselect"/>
+                      name="Deselect"/>om
+
+                    <script>
+                      function selectImport() {
+                        checkboxes = document.getElementsByName("importFields");
+                        for(var i in checkboxes) {
+                          checkboxes[i].checked = true;
+                        }
+                      };
+
+                      function deselectImport() {
+                        checkboxes = document.getElementsByName("importFields");
+                        for(var i in checkboxes) {
+                          checkboxes[i].checked = false;
+                        }
+                      };
+                    </script>
+
                   </div>
 
-                  <table cellspacing="0" cellpadding="0" border="0'">
-                    <tr tal:repeat="val python: view.getImportfields().values()">
-                      <td tal:repeat="index python: range(len(val))">
-                        <input type="checkbox" name='importFields' value='null'
-                          tal:attributes="value python: val[index]">
-                        <p tal:content="text python: val[index]">
-                          field
-                        </p>
-                        </input>
-                      </td>
-                    </tr>
-                  </table>
+                  <!-- <div id="setdata" matrix="" importfile=""
+                    tal:define="importfile string:importfile"
+                    tal:attributes="matrix python: view.getImportfields().values()">
+                  </div> -->
 
-                  <script>
-
-                    function selectImport() {
-                      checkboxes = document.getElementsByName("importFields");
-                      for(var i in checkboxes) {
-                        checkboxes[i].checked = true;
-                      }
-                    }
-
-                    function deselectImport() {
-                      checkboxes = document.getElementsByName("importFields");
-                      for(var i in checkboxes) {
-                        checkboxes[i].checked = false;
-                      }
-                    }
-
-                  </script>
-
+                  <div id="table">
+                    <!-- <table cellspacing="0" cellpadding="0" border="0'">
+                      <tr tal:repeat="val python: view.getImportfields().values()">
+                        <td tal:repeat="index python: range(len(val))">
+                          <input type="checkbox" name='importFields' value='null'
+                            tal:attributes="value python: val[index]">
+                          <p tal:content="text python: val[index]">
+                            field
+                          </p>
+                          </input>
+                        </td>
+                      </tr>
+                    </table> -->
+                  </div>
 
                 </section>
 
@@ -252,6 +292,7 @@ i18n:domain="plone">
 
               <input type="submit" name="imports" value="Import" i18n:attributes="value" />
               <!-- <button type="button" onclick=view.setFile()> Re-Upload </button> -->
+
 
             </form>
 

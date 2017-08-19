@@ -588,14 +588,19 @@ class ImportExportView(BrowserView):
         return matrix
 
     # returns headers of imported csv file
-    def getImportfields(self):
+    def getImportfields(self, importfile=None):
 
+        # import pdb; pdb.set_trace()
         global MUST_INCLUDED_ATTRIBUTES
         # TODO need to implement mechanism to get uploaded file
         # temp csv_file
         # csv_file = 'P2.csv'
         # csvData = open(csv_file,'r')
-        csvData = 'fieldA, fieldB \n A,B'
+
+        now = DateTime()
+        new_id = ''.format(randint(0, 9))
+        csvData = str(new_id)
+        csvData += 'fieldA, fieldB \n A,'
 
         try:
             # convert csv to json
