@@ -6,6 +6,7 @@ from plone.importexport.testing import PLONE_IMPORTEXPORT_INTEGRATION_TESTING  #
 from plone import api
 from plone.importexport.exceptions import ImportExportError
 from plone.importexport import utils
+from plone import api
 import unittest2 as unittest
 from zope.component import getMultiAdapter
 from cStringIO import StringIO
@@ -62,10 +63,11 @@ class TestImportExportView(unittest.TestCase):
     def test_import(self):
 
         # FIXME obj.invokeFactory throws Unauthorized Exception
-        try:
-            errors = self.view.imports()
-        except Exception as e:
-            self.fail(e)
+        with api.env.adopt_roles(['Manager']):
+            try:
+                errors = self.view.imports()
+            except Exception as e:
+                self.fail(e)
 
 
     def test_export(self):
