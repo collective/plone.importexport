@@ -1,5 +1,4 @@
 import json
-import pdb
 # An Adapter to serialize a Dexterity object into a JSON object.
 from plone.restapi.interfaces import ISerializeToJson
 # An adapter to deserialize a JSON object into an object in Plone.
@@ -51,7 +50,6 @@ class ImportExportView(BrowserView):
         self.importHeaders = None
         self.existingPath = []
         self.files = {}
-        # pdb.set_trace()
         # self.uploadedfile = 'None'
         # print "initiated"
 
@@ -70,7 +68,6 @@ class ImportExportView(BrowserView):
                 if isinstance(data[key], dict):
                     self.exclude_attributes(data[key])
                 elif isinstance(data[key], list):
-                    # pdb.set_trace()
                     for index in range(len(data[key])):
                         self.exclude_attributes(data[key][index])
 
@@ -186,7 +183,6 @@ class ImportExportView(BrowserView):
                 # get id_ of Plone sites
                 id_ = self.context.absolute_url_path()[1:]
 
-                # pdb.set_trace()
                 exportType = self.request.get('exportFormat', None)
 
                 if self.request.get('exportFields', None) and (exportType=='csv' or exportType=='combined'):
@@ -212,7 +208,6 @@ class ImportExportView(BrowserView):
                     raise ImportExportError(e.message)
                 except:
                     raise ImportExportError('Error while serializing')
-                # pdb.set_trace()
                 try:
                     self.conversion.convertjson(self, results, include)
                 except ImportExportError as e:
@@ -227,7 +222,6 @@ class ImportExportView(BrowserView):
 
                 return self.zip.read()
             else:
-                # pdb.set_trace()
                 raise ImportExportError('Invalid Request')
         except ImportExportError as e:
             errors.append(e.message)
@@ -397,7 +391,6 @@ class ImportExportView(BrowserView):
             type_ =  file_.headers.values()[0].split('/')[-1]
             file_.seek(0)
             filename =  file_.filename
-            # pdb.set_trace()
             # analyse = utils.fileAnalyse()
             # type_ = analyse.getFiletype(file_)
 
@@ -418,7 +411,6 @@ class ImportExportView(BrowserView):
                 # files are at self.files
                 self.requestFile(file_)
 
-                # pdb.set_trace()
                 # file structure and analyser
                 self.files = utils.fileAnalyse(self.files)
 
@@ -459,7 +451,6 @@ class ImportExportView(BrowserView):
                 # convert csv to json
                 data = self.conversion.converttojson(self.files.getCsv(),
                  header=include)
-                # pdb.set_trace()
                 # invoke non-existent content,  if any
                 error_log += self.createcontent(data)
 
@@ -469,7 +460,6 @@ class ImportExportView(BrowserView):
                 # deserialize
                 for index in range(len(data)):
 
-                    # pdb.set_trace()
                     obj_data = data[index]
 
                     if not obj_data.get('path', None):
@@ -479,7 +469,6 @@ class ImportExportView(BrowserView):
                     # get blob content into json data
                     obj_data, temp_log = self.conversion.fillblobintojson(
                     obj_data, self.files.getFiles(), self.mapping)
-                    # pdb.set_trace()
 
                     error_log += temp_log
 
@@ -494,7 +483,6 @@ class ImportExportView(BrowserView):
                     else:
                         error_log += 'pathError for {}\n'.format(obj_data['path'])
 
-                # pdb.set_trace()
 
                 self.files = {}
                 # self.request.RESPONSE.setHeader('content-type','application/text; charset=utf-8')
@@ -508,7 +496,6 @@ class ImportExportView(BrowserView):
             return e.message
         except:
             self.files = {}
-            # pdb.set_trace()
             return 'Bad Request'
 
     # return headers of serialized self.context
@@ -551,7 +538,6 @@ class ImportExportView(BrowserView):
             raise ImportExportError('Provide Headers')
 
         matrix = {}
-        # pdb.set_trace()
         count = len(headers)
         rows = float(count/columns)
 
@@ -590,7 +576,6 @@ class ImportExportView(BrowserView):
     # returns headers of imported csv file
     def getImportfields(self, importfile=None):
 
-        # import pdb; pdb.set_trace()
         global MUST_INCLUDED_ATTRIBUTES
         # TODO need to implement mechanism to get uploaded file
         # temp csv_file

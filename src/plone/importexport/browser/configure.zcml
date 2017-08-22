@@ -34,4 +34,12 @@
         permission="cmf.ModifyPortalContent"
         />
 
+    <browser:page
+        for="Products.CMFCore.interfaces.IFolderish"
+        name="getImportfields"
+        class=".importexport.ImportExportView"
+        attribute ="getImportfields"
+        permission="cmf.ModifyPortalContent"
+        />
+
 </configure>
