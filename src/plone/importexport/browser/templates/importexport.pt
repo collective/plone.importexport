@@ -106,9 +106,9 @@ i18n:domain="plone">
           <section>
 
             <div >
-              <input type="button" onclick= "selectExport()"  value="Select all"
+              <input type="button" onclick= "selectAll('exportFields')"  value="Select all"
                 name="Select"/>
-              <input type="button" onclick="deselectExport()" value="Deselect all"
+              <input type="button" onclick="deselectAll('exportFields')" value="Deselect all"
                 name="Deselect"/>
             </div>
 
@@ -136,24 +136,6 @@ i18n:domain="plone">
           <input type="submit" name="export" value="Export"
             i18n:attributes="value" />
 
-          <script>
-
-            function selectExport() {
-              checkboxes = document.getElementsByName("exportFields");
-              for(var i in checkboxes) {
-                checkboxes[i].checked = true;
-              }
-            }
-
-            function deselectExport() {
-              checkboxes = document.getElementsByName("exportFields");
-              for(var i in checkboxes) {
-                checkboxes[i].checked = false;
-              }
-            }
-
-          </script>
-
         </form>
 
       </subfieldset>
@@ -174,13 +156,13 @@ i18n:domain="plone">
                 <div class="formHelp" i18n:translate="import_basic_importfile_help">
                   Select a CSV or a ZIP file providing the contents to import.
                 </div>
-                <input type="file" name="file" multiple="multiple" id="uploadID" />
+                <input id="uploadID" type="file" name="file" multiple="multiple" />
 
               </div>
 
               <div id="table">
 
-                <!-- dump method using tal mechanism-->
+                <!-- dumb method using tal mechanism, a more rigourous JS is used-->
                 <div >
                   <!-- <table cellspacing="0" cellpadding="0" border="0'">
                     <tr tal:repeat="val python: view.getImportfields().values()">
@@ -202,130 +184,9 @@ i18n:domain="plone">
 
               </div>
 
-              <script>
-
-                var file = document.getElementById("uploadID");
-                var table = document.getElementById("table");
-
-
-                file.onchange = function(){
-
-                  var matrix = {"0": ["limit","hence"]};
-                  uploadedfile = file.files
-                  var formdata = new FormData();
-                  formdata.append("file", uploadedfile[0])
-                  console.log('here', formdata)
-                  $.post("getImportfields", {data: formdata,
-                  contentType: false, processData: false,}, function( data ) {
-                    console.log(data)
-                    matrix = data
-
-                    var htmlDump = ''
-
-                    htmlDump += `
-                      <label> Specify fields to import </label>
-                      <h5> Defualt fields:{@type, path, id, UID}</h5>
-
-                      <!-- buttons for SelectAll and DeselectAll -->
-                      <div >
-                        <input type="button" onclick= "selectImport()"  value="Select all"
-                          name="Select"/>
-                        <input type="button" onclick="deselectImport()" value="Deselect all"
-                          name="Deselect"/>
-                      </div>
-                    `
-                    <!-- Dynamic Table -->
-                    htmlDump += "<table>";
-                    for (var i in Object.keys(matrix)){
-                      htmlDump += "<tr>";
-                      for (var j in matrix[i]){
-                        htmlDump += `
-                          <td>
-                          <input type="checkbox" name="importFields">
-                        `;
-                        <!-- TODO mention value in these fields -->
-                        htmlDump += matrix[i][j];
-                        htmlDump += `
-                          </input>
-                          </td>
-                        `;
-                      }
-                      htmlDump += "</tr>";
-                    }
-                    htmlDump += "</table>";
-
-
-                    htmlDump += `
-                      <label> Action to take if content already existed?</label>
-                      <br>
-
-                      <input type="radio" name="actionExist" value="update"
-                        checked="checked">
-                        Update
-                      </input>
-
-                      <input type="radio" name="actionExist" value="ignore" >
-                        Ignore
-                      </input>
-
-                      <input type="radio" name="actionExist" onclick="createNew()" value="new">
-                        Create New
-                      </input>
-
-                      <div id="createNew">
-                      </div>
-
-                      <br>
-                      <br>
-
-                      <input type="submit" name="imports" value="Import" i18n:attributes="value" />
-
-                    `
-                    table.innerHTML = htmlDump;
-                  });
-
-
-                };
-
-                function createNew() {
-                  console.log("creating new")
-                  <!-- TODO define mechanism to dynamically generate table for create new -->
-                };
-
-                function selectImport() {
-                  checkboxes = document.getElementsByName("importFields");
-                  for(var i in checkboxes) {
-                    checkboxes[i].checked = true;
-                  }
-                };
-
-                function deselectImport() {
-                  checkboxes = document.getElementsByName("importFields");
-                  for(var i in checkboxes) {
-                    checkboxes[i].checked = false;
-                  }
-                };
-
-
-              </script>
-
             </form>
 
           </div>
-
-          <!-- <div tal:condition="python: not exist">
-
-            <form action="fileAnalyse" enctype="multipart/form-data" method="POST">
-
-              <div class="pat-upload" data-pat-upload='{
-                "showTitle": false
-                }'>
-              </div>
-
-            </form>
-
-          </div> -->
-
 
       </subfieldset>
 
