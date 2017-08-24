@@ -6,7 +6,6 @@ import cStringIO
 import zipfile
 import operator
 import json
-import pdb
 from plone.uuid.interfaces import IUUID
 from plone.importexport.exceptions import ImportExportError
 import fnmatch
@@ -92,7 +91,6 @@ class Pipeline(object):
                         reverse=True)
         for key in header:
             result.append(key[0])
-        # pdb.set_trace()
         return result
 
     def convertjson(self, obj, data_list, csv_headers):
@@ -141,11 +139,9 @@ class Pipeline(object):
         return
 
     def getblob(self, obj, data, path_):
-        # pdb.set_trace()
         # store blob content and replace url with path
         if (isinstance(data, dict) and
                 data.get('download', None)):
-            # pdb.set_trace()
 
             file_path = path_
             relative_filepath = os.path.join(
@@ -164,23 +160,19 @@ class Pipeline(object):
                 print 'Blob data fetching error'
             else:
                 filename = data['filename']
-                # pdb.set_trace()
                 data['download'] = os.path.join(
                     file_path, filename)
                 obj.zip.append(data['download'],
                                file_data)
 
-                # pdb.set_trace()
         # '''store html files and replace key[data] with
         #     key[download], value= path in zip'''
         elif (isinstance(data, dict) and
                 data.get('data', None)):
-            # pdb.set_trace()
 
             file_path = path_
 
             try:
-                # pdb.set_trace()
                 # REVIEW does separator for content-type here also depends on os.sep?
                 if data['content-type'].split(
                             '/')[1] == 'html':
@@ -195,7 +187,6 @@ class Pipeline(object):
                                         file_path, filename)
                 obj.zip.append(data['download'],
                                file_data)
-                # pdb.set_trace()
 
         return data
 
@@ -254,7 +245,6 @@ class Pipeline(object):
 
     def fillblobintojson(self, obj_data, files, UIDmapping):
 
-        # pdb.set_trace()
         self.mapping = UIDmapping
         error_log = ''
 
@@ -273,7 +263,6 @@ class Pipeline(object):
                     from zip {}'''.format(obj_data['path']))
 
         if obj_data.get('file', None):
-            # pdb.set_trace()
             value = obj_data['file'].get('download', None)
             if value and files.get(value, None):
                 try:
@@ -312,15 +301,12 @@ class Pipeline(object):
 
 class mapping(object):
 
-    def __init__(self, obj=None):
-        if not obj:
-            raise ImportExportError('No obj')
+    def __init__(self, obj):
         self.mapping = {}
         self.obj = obj
 
     def mapNewUID(self, content):
 
-        # pdb.set_trace()
         for data in content:
 
             UID = data.get('UID', None)
@@ -328,10 +314,6 @@ class mapping(object):
 
             if path and UID:
                 self.mapping[UID] = self.getUID(path)
-
-            else:
-                # TODO raise error_log here
-                continue
 
         return self.mapping
 
@@ -357,10 +339,8 @@ class mapping(object):
 
 class fileAnalyse(object):
 
-    def __init__(self, files=None):
-        # pdb.set_trace()
-        if not files:
-            raise ImportExportError('Provide file to analyse')
+    def __init__(self, files):
+
         self.files = files
         self.csv_file = None
         # unzip the zip and restructure the dict
