@@ -159,6 +159,8 @@ class ImportExportView(BrowserView):
 
         if self.request and self.request.method == 'POST':
 
+            id_ = self.context.absolute_url_path()[1:]
+
             exportType = self.request.get('exportFormat', None)
 
             if self.request.get('exportFields', None) and (exportType=='csv' or exportType=='combined'):
