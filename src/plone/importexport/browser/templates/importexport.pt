@@ -5,13 +5,19 @@ xmlns:i18n="http://xml.zope.org/namespaces/i18n"
 lang="en"
 metal:use-macro="context/main_template/macros/master"
 i18n:domain="plone">
+<head>
+
+</head>
 <body>
+  <metal:js fill-slot="javascript_head_slot">
+    <script type="text/javascript" src="++resource++plone.importexport/import_export.js"></script>
+  </metal:js>
+
   <metal:content fill-slot="content-core">
 
   <div class="pat-autotoc autotabs" data-pat-autotoc="section:fieldset;
     levels:legend;">
 
-    <h3>Title</h3>
     <!-- Basic Tab -->
     <fieldset>
       <legend i18n:translate="">Basic</legend>
@@ -22,7 +28,8 @@ i18n:domain="plone">
         <h2 i18n:translate="">Export</h2>
 
         <form action="export" method="POST">
-          <input type="submit" name="export" value="Export" i18n:attributes="value" />
+          <input type="submit" name="export" value="Export"
+            i18n:attributes="value" />
         </form>
 
       </section>
@@ -97,15 +104,17 @@ i18n:domain="plone">
           <h5> Caution: If nothing is selected, all fields will be exported</h5>
           <section>
 
-            <div class="functions">
-              <button class="select-all">Select all</button>
-              <button class="deselect-all">Deselect all</button>
+            <div >
+              <input type="button" onclick= "selectAll('exportFields')"  value="Select all"
+                name="Select"/>
+              <input type="button" onclick="deselectAll('exportFields')" value="Deselect all"
+                name="Deselect"/>
             </div>
 
-            <table style="border:0; width:100%">
+            <table>
               <tr tal:repeat="val python: view.getExportfields().values()">
                 <td tal:repeat="index python: range(len(val))">
-                  <input type="checkbox" name='fields' value='null'
+                  <input type="checkbox" name='exportFields' value='null'
                     tal:attributes="value python: val[index]">
                   <p tal:content="text python: val[index]">
                     field
@@ -119,6 +128,10 @@ i18n:domain="plone">
 
           <br>
 
+          <!-- <div id="change"></div>
+          <input type = "button" onclick = "Fun()" name = "Select"
+             value = "Click Me" /> -->
+
           <input type="submit" name="export" value="Export"
             i18n:attributes="value" />
 
@@ -127,40 +140,33 @@ i18n:domain="plone">
       </subfieldset>
 
       <!-- Advance Import -->
-      <!-- TODO exist define wheather user have uploaded a file before? -->
       <subfieldset tal:define="exist python: True">
 
         <h1 i18n:translate="">Import</h1>
-        <!-- TODO use js as TAL cannot fulfill complete requirements -->
-          <div tal:condition="python: exist">
+
+          <div>
 
             <form action="imports" enctype="multipart/form-data" method="POST">
 
-
+              <!-- File Import mechanism -->
               <div class="field">
                 <label for="importfile">File</label>
                 <div class="formHelp" i18n:translate="import_basic_importfile_help">
                   Select a CSV or a ZIP file providing the contents to import.
                 </div>
-                <input type="file" name="file" multiple="multiple" />
+                <input id="uploadID" type="file" name="file" multiple="multiple" />
+
               </div>
 
-               <!-- TODO trigger the below div only on uploading file -->
-              <div>
-                <label> Specify fields to import </label>
-                <h5> Defualt fields:{@type, path, id, UID}</h5>
+              <div id="table">
 
-                <section>
 
-                  <div class="functions">
-                    <button class="select-all">Select all</button>
-                    <button class="deselect-all">Deselect all</button>
-                  </div>
-
-                  <table cellspacing="0" cellpadding="0" border="0'">
+                <!-- dumb method using tal mechanism, which is not in use anymore-->
+                <div >
+                  <!-- <table cellspacing="0" cellpadding="0" border="0'">
                     <tr tal:repeat="val python: view.getImportfields().values()">
                       <td tal:repeat="index python: range(len(val))">
-                        <input type="checkbox" name='fields' value='null'
+                        <input type="checkbox" name='importFields' value='null'
                           tal:attributes="value python: val[index]">
                         <p tal:content="text python: val[index]">
                           field
@@ -168,50 +174,18 @@ i18n:domain="plone">
                         </input>
                       </td>
                     </tr>
-                  </table>
+                  </table> -->
+                </div>
 
-                </section>
+                <!-- this is where create new option will render -->
+                <div id="createNew">
+                </div>
 
-                <label> Action to take if content already existed?</label>
-                <br>
-
-                <input type="radio" name="actionExist" value="update"
-                  checked="checked">
-                  Update
-                </input>
-
-                <input type="radio" name="actionExist" value="ignore" >
-                  Ignore
-                </input>
-
-                <input type="radio" name="actionExist" value="new">
-                  Create New
-                </input>
               </div>
-
-              <br>
-              <br>
-
-              <input type="submit" name="imports" value="Import" i18n:attributes="value" />
-              <!-- <button type="button" onclick=view.setFile()> Re-Upload </button> -->
 
             </form>
 
           </div>
-
-          <!-- <div tal:condition="python: not exist">
-
-            <form action="fileAnalyse" enctype="multipart/form-data" method="POST">
-
-              <div class="pat-upload" data-pat-upload='{
-                "showTitle": false
-                }'>
-              </div>
-
-            </form>
-
-          </div> -->
-
 
       </subfieldset>
 

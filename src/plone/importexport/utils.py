@@ -374,11 +374,9 @@ class fileAnalyse(object):
                 pass
             elif fnmatch.fnmatch(key, '*.csv'):
                     if not self.csv_file:
-                        # pdb.set_trace()
                         self.csv_file  = self.files[key]
                     else:
-                        # pdb.set_trace()
-                        raise ImportExportError('Require 1 csv, 2 provided')
+                        raise ImportExportError('More than 1 csv file provided, require only 1 ')
 
         return self.csv_file
 

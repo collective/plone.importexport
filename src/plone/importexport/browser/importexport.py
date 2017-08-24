@@ -1,5 +1,4 @@
 import json
-import pdb
 # An Adapter to serialize a Dexterity object into a JSON object.
 from plone.restapi.interfaces import ISerializeToJson
 # An adapter to deserialize a JSON object into an object in Plone.
@@ -45,7 +44,7 @@ MUST_INCLUDED_ATTRIBUTES = ['@type', 'path', 'id', 'UID']
 
 class ImportExportView(BrowserView):
     """Import/Export page."""
-    template = ViewPageTemplateFile('templates/importexport.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -55,10 +54,6 @@ class ImportExportView(BrowserView):
         self.files = {}
         # self.uploadedfile = 'None'
         # print "initiated"
-
-    def __call__(self):
-        add_resource_on_request(self.request, 'plone.importexport')
-        return self.template()
 
     # this will del MUST_EXCLUDED_ATTRIBUTES from data till leaves of the tree
     def exclude_attributes(self, data=None):
@@ -187,12 +182,17 @@ class ImportExportView(BrowserView):
 
         if self.request and self.request.method == 'POST':
 
-            # get id_ of Plone sites
-            id_ = self.context.absolute_url_path()[1:]
-
             exportType = self.request.get('exportFormat', None)
 
-            if self.request.get('fields', None) and (exportType=='csv' or exportType=='combined'):
+            if self.request.get('exportFields', None) and (exportType=='csv' or exportType=='combined'):
+
+                # fields/keys to include
+                include = self.request.get('exportFields', None)
+                # BUG in html checkbox input, which send value as a string if only one value have been checked
+                if isinstance(include, str):
+                    include = [include]
+                include = list(set(MUST_INCLUDED_ATTRIBUTES +
+                    include))
 
                 # fields/keys to include
                 headers = self.request.get('fields', None)
@@ -429,10 +429,10 @@ class ImportExportView(BrowserView):
             temp_log = ''
 
             # check for include attributes in advanced tab
-            if self.request.get('fields', None):
+            if self.request.get('importFields', None):
 
                 # fields/keys to include
-                include = self.request.get('fields', None)
+                include = self.request.get('importFields', None)
                 # BUG in html checkbox input, which send value as a
                 #  string if only one value have been checked
                 if isinstance(include, str):
@@ -486,12 +486,6 @@ class ImportExportView(BrowserView):
         else:
             raise ImportExportError('Invalid Request Method')
 
-        # except ImportExportError as e:
-        #     error =  e.message
-        # except Exception as e:
-        #     error = e
-        # except:
-        #     error =  'Bad Request'
 
     # return headers of serialized self.context
     def getheaders(self):
@@ -547,24 +541,37 @@ class ImportExportView(BrowserView):
     def getImportfields(self):
 
         global MUST_INCLUDED_ATTRIBUTES
-        # TODO need to implement mechanism to get uploaded file
-        # temp csv_file
-        # csv_file = 'P2.csv'
-        # csvData = open(csv_file,'r')
-        csvData = 'fieldA, fieldB \n A,B'
 
-        # convert csv to json
-        conversion = utils.Pipeline()
-        jsonData = conversion.converttojson(data=csvData)
-        # get headers from jsonData
-        headers = conversion.getcsvheaders(jsonData)
+        try:
+            # request files
+            file_ = self.request.get('file')
+            # files are at self.files
+            self.requestFile(file_)
 
-        headers = filter(lambda headers: headers not in MUST_INCLUDED_ATTRIBUTES,
-            headers)
+            # file structure and analyser
+            self.files = utils.fileAnalyse(self.files)
 
-        # get matrix of headers
-        matrix = self.getmatrix(headers=headers, columns=4)
+            if not self.files.getCsv():
+                raise ImportExportError('Provide a good csv file')
 
+            csvData = self.files.getCsv()
+            # convert csv to json
+            conversion = utils.Pipeline()
+            jsonData = conversion.converttojson(data=csvData)
+            # get headers from jsonData
+            headers = conversion.getcsvheaders(jsonData)
+
+            headers = filter(lambda headers: headers not in MUST_INCLUDED_ATTRIBUTES,
+                headers)
+
+            # get matrix of headers
+            matrix = self.getmatrix(headers=headers, columns=4)
+
+        except Exception as e:
+            matrix = {'Error': e.message}
+
+        # JS requires json dump
+        matrix = json.dumps(matrix)
         return matrix
 
     def getExcludedAttributes(self):
