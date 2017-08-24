@@ -204,7 +204,7 @@ class Pipeline(object):
 
         return data
 
-    def converttojson(self, data=None):
+    def converttojson(self, data=None, header=None):
         if not data:
             raise ImportExportError("Provide data to jsonify")
         ''' A major BUG here
@@ -219,6 +219,14 @@ class Pipeline(object):
             data.append(row)
         # jsonify quoted json values
         data = self.jsonify(data)
+
+        # filter keys which are not in header, feature of advance_import
+        if header:
+            for index in range(len(data)):
+                for k in data[index].keys():
+                    if k not in header:
+                        del data[index][k]
+
         self.filter_keys(data)
         return data
 
@@ -306,7 +314,6 @@ class Pipeline(object):
                     from zip {}'''.format(obj_data['path']))
 
         return obj_data, error_log
-
 
 class mapping(object):
 
