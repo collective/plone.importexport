@@ -56,9 +56,7 @@ class ImportExportView(BrowserView):
         # print "initiated"
 
     # this will del MUST_EXCLUDED_ATTRIBUTES from data till leaves of the tree
-    def exclude_attributes(self, data=None):
-        if not data:
-            raise ImportExportError('Provide Data')
+    def exclude_attributes(self, data):
 
         if isinstance(data, dict):
             for key in data.keys():
@@ -73,20 +71,10 @@ class ImportExportView(BrowserView):
                     for index in range(len(data[key])):
                         self.exclude_attributes(data[key][index])
 
-    def serialize(self, obj=None):
-
-        if not obj:
-            raise ImportExportError('Object required to serialize')
+    def serialize(self, obj):
 
         results = []
-        # using plone.restapi to serialize
-        try:
-            serializer = queryMultiAdapter((obj, self.request), ISerializeToJson)
-        except:
-            raise ImportExportError("Error while quering adapter for serializer")
-
-        if not serializer:
-            raise ImportExportError('Cannot find any adapter for serializer')
+        serializer = queryMultiAdapter((obj, self.request), ISerializeToJson)
 
         data = serializer()
 
@@ -107,17 +95,11 @@ class ImportExportView(BrowserView):
                 except ImportExportError as e:
                     error = e.message + ' for ' + data['path']
                     raise ImportExportError(error)
-                except :
-                    error = 'Fatal Error for ' + data['path']
-                    raise ImportExportError(error)
         return results
 
     # context == requested object, data=metadata for object in json string
     # existing content are identified by path and ignored if requested
-    def deserialize(self, context=None, data=None):
-
-        if not context or not data:
-            raise ImportExportError('Provide 2 good attributes')
+    def deserialize(self, context, data):
 
         path = str(context.absolute_url_path()[1:])
 
@@ -141,11 +123,8 @@ class ImportExportView(BrowserView):
         zope.interface.directlyProvides(request, IBrowserRequest)
 
         # using plone.restapi to deserialize
-        try:
-            deserializer = queryMultiAdapter((context, request),
+        deserializer = queryMultiAdapter((context, request),
                                          IDeserializeFromJson)
-        except:
-            raise ImportExportError("Error while quering adapter")
 
         try:
             deserializer()
@@ -165,8 +144,6 @@ class ImportExportView(BrowserView):
             error = str(str(e.message) + ' for '+ path + '\n')
         except ValueError as e:
             error = str(str(e.message) + ' for '+ path + '\n')
-        except:
-            error = str('Fatal Error for '+ path + '\n')
         return error
 
     def export(self):
@@ -227,10 +204,7 @@ class ImportExportView(BrowserView):
             raise ImportExportError('Invalid Request')
 
     # invoke non-existent content,  if any
-    def createcontent(self, data=None):
-
-        if not data:
-            raise ImportExportError('Bad Request')
+    def createcontent(self, data):
 
         log = ''
         for index in range(len(data)):
@@ -258,6 +232,7 @@ class ImportExportView(BrowserView):
 
             id_ = obj_data.get('id', None)
             title = obj_data.get('title', None)
+            type_ = obj_data.get('@type', None)
 
             # creating  random id
             if not id_:
@@ -281,7 +256,6 @@ class ImportExportView(BrowserView):
                     if not obj_data.get('@type', None):
                         log += 'typeError in {}\n'.format(obj_data['path'])
                         continue
-                    type_ = obj_data.get('@type', None)
 
                     # Create object
                     try:
@@ -317,21 +291,18 @@ class ImportExportView(BrowserView):
                     self.getExistingpath(member)
 
     #  provide list of path that occured in Plone server and uploaded csv
-    def getCommanpath(self, dataPath=None):
+    def getCommonpath(self, dataPath):
 
-        if not dataPath:
-            raise ImportExportError('Provide dataPath to compare')
-
-        comman = []
+        common = []
 
         # get list of existingPath
         self.getExistingpath()
 
         for path in dataPath:
             if path in self.existingPath:
-                comman.append(path)
+                common.append(path)
 
-        return comman
+        return common
 
     # if creating new content against existing content
     def getCommancontent(self):
@@ -349,19 +320,14 @@ class ImportExportView(BrowserView):
         for element in jsonList:
             path_.append(element.get('path', None))
 
-        comman_path = self.getCommanpath(path_)
+        common_path = self.getCommonpath(path_)
 
-        return comman_path
+        return common_path
 
     # requires path list from root
     def getobjcontext(self, path):
 
-        try:
-            obj = self.context
-        except:
-            raise ImportExportError('Bad Request')
-
-        # FIXME raise error in log_file if element not present in site,
+        obj = self.context
 
         # traversing to the desired folder
         for element in path[1:]:
@@ -372,9 +338,7 @@ class ImportExportView(BrowserView):
 
         return obj
 
-    def requestFile(self, file_=None):
-        if not file_ :
-            raise ImportExportError("Provide File")
+    def requestFile(self, file_):
 
         if isinstance(file_, list):
             for element in file_:
@@ -383,7 +347,7 @@ class ImportExportView(BrowserView):
         else:
             file_.seek(0)
             if not file_.read():
-                raise ImportExportError("Provide File")
+                raise ImportExportError("Provide Good File")
             file_.seek(0)
             try:
                 filename =  file_.filename
@@ -490,7 +454,6 @@ class ImportExportView(BrowserView):
 
         else:
             raise ImportExportError('Invalid Request Method')
-
 
     # return headers of serialized self.context
     def getheaders(self):
