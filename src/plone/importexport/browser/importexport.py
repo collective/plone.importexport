@@ -574,43 +574,38 @@ class ImportExportView(BrowserView):
         return matrix
 
     # returns headers of imported csv file
-    def getImportfields(self, importfile=None):
+    def getImportfields(self):
 
         global MUST_INCLUDED_ATTRIBUTES
-        # TODO need to implement mechanism to get uploaded file
-        # temp csv_file
-        # csv_file = 'P2.csv'
-        # csvData = open(csv_file,'r')
-
-        now = DateTime()
-        new_id = ''.format(randint(0, 9))
-        csvData = str(new_id)
-        csvData += 'fieldA, fieldB \n A,'
 
         try:
+            # request files
+            file_ = self.request.get('file')
+            # files are at self.files
+            self.requestFile(file_)
+
+            # file structure and analyser
+            self.files = utils.fileAnalyse(self.files)
+
+            if not self.files.getCsv():
+                raise ImportExportError('Provide a good csv file')
+
+            csvData = self.files.getCsv()
             # convert csv to json
             conversion = utils.Pipeline()
             jsonData = conversion.converttojson(data=csvData)
             # get headers from jsonData
             headers = conversion.getcsvheaders(jsonData)
-        except ImportExportError as e:
-            print e.message
-            raise
-        except:
-            print ('Fatal error while converting csvData to jsonData')
-            raise
 
-        headers = filter(lambda headers: headers not in MUST_INCLUDED_ATTRIBUTES,
-            headers)
+            headers = filter(lambda headers: headers not in MUST_INCLUDED_ATTRIBUTES,
+                headers)
 
-        # get matrix of headers
-        try:
+            # get matrix of headers
             matrix = self.getmatrix(headers=headers, columns=4)
-        except ImportExportError as e:
-            print (e.message)
-            raise
-        except:
-            print ('Fatal error in fetching headers')
-            raise
 
+        except Exception as e:
+            matrix = {'Error': e.message}
+
+        # JS requires json dump
+        matrix = json.dumps(matrix)
         return matrix
