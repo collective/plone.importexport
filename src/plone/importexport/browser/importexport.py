@@ -445,8 +445,7 @@ class ImportExportView(BrowserView):
                 include = None
 
             # convert csv to json
-            data = self.conversion.converttojson(self.files.getCsv(),
-             header=include)
+            data = self.conversion.converttojson(self.files.getCsv())
             # invoke non-existent content,  if any
             error_log += self.createcontent(data)
 
@@ -457,6 +456,12 @@ class ImportExportView(BrowserView):
             for index in range(len(data)):
 
                 obj_data = data[index]
+
+                # filter deselected keys, feature of advance_import
+                if include:
+                    for k in obj_data.keys():
+                        if k not in include:
+                            del obj_data[k]
 
                 if not obj_data.get('path', None):
                     error_log += 'pathError in {} \n'.format(obj_data['path'])

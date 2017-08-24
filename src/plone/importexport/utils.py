@@ -199,11 +199,13 @@ class Pipeline(object):
 
         return data
 
-    def converttojson(self, data=None, header=None):
+    def converttojson(self, data=None):
         if not data:
             raise ImportExportError("Provide data to jsonify")
-        # pdb.set_trace()
-        reader = csv.DictReader(data, fieldnames=header)
+        ''' A major BUG here
+        The fieldnames parameter is a sequence whose elements are associated with the fields of the input data in order
+        '''
+        reader = csv.DictReader(data, fieldnames=None)
         data = []
         for row in reader:
             for key in row.keys():
