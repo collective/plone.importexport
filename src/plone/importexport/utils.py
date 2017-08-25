@@ -9,9 +9,6 @@ import json
 from plone.uuid.interfaces import IUUID
 from plone.importexport.exceptions import ImportExportError
 import fnmatch
-# REVIEW stable lib for other OS https://github.com/ahupp/python-magic#dependencies
-# REVIEW should magic be used?
-# import magic
 
 class InMemoryZip(object):
 

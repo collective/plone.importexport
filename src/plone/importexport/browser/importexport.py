@@ -61,7 +61,7 @@ class ImportExportView(BrowserView):
         if isinstance(data, dict):
             for key in data.keys():
 
-                if key in MUST_EXCLUDED_ATTRIBUTES:
+                if key in self.getExcludedAttributes():
                     del data[key]
                     continue
 
@@ -217,18 +217,17 @@ class ImportExportView(BrowserView):
                 log += 'pathError in {}\n'.format(obj_data['path'])
                 continue
 
-            #  os.sep is preferrable to support multiple filesystem
-            #  return parent of context
-            try:
-                obj = self.getobjcontext(
-                    obj_data['path'].split(os.sep)[:-1])
-            except ImportExportError as e:
-                log += e.message + 'for {}\n'.format(
-                    obj_data['path'])
+            if not obj_data.get('@type', None):
+                log += '@typeError in {}\n'.format(obj_data['path'])
                 continue
 
+            #  os.sep is preferrable to support multiple filesystem
+            #  return parent of context
+            obj = self.getobjcontext(
+                obj_data['path'].split(os.sep)[:-1])
+
             if not obj:
-                log += 'Parent object not found for {}\n'.format(
+                log += 'pathError, Parent object not found for {}\n'.format(
                     obj_data['path'])
                 continue
 
@@ -269,14 +268,14 @@ class ImportExportView(BrowserView):
                         new_id = obj.invokeFactory(type_, new_id, title=title)
                     except BadRequest as e:
                         # self.request.response.setStatus(400)
-                        log += 'BadRequest {}\n'.format(str(e.message))
+                        log += 'Error, BadRequest {}\n'.format(str(e.message))
                     except ValueError as e:
                         # self.request.response.setStatus(400)
                         log += 'ValueError {}\n'.format(str(e.message))
 
         return log
 
-    # get list of existingPath
+    # get list of existingPath under given context
     def getExistingpath(self, context=None):
 
         if not context:
@@ -539,7 +538,9 @@ class ImportExportView(BrowserView):
         return matrix
 
     def getExcludedAttributes(self):
+        global MUST_EXCLUDED_ATTRIBUTES
         return MUST_EXCLUDED_ATTRIBUTES
 
     def getIncludedAttributes(self):
+        global MUST_INCLUDED_ATTRIBUTES
         return MUST_INCLUDED_ATTRIBUTES
