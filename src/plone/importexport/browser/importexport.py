@@ -134,16 +134,10 @@ class ImportExportView(BrowserView):
                     api.content.transition(obj=context, to_state=new_state)
 
             return "Success for {} \n".format(path)
-        except MissingParameterError as e:
-            raise ImportExportError('parameter is missing for review_state')
-        except InvalidParameterError as e:
-            raise ImportExportError('Invalid parameter for review_state')
-        except DeserializationError as e:
-            error = str(str(e.message) + ' for '+ path + '\n')
-        except BadRequest as e:
-            error = str(str(e.message) + ' for '+ path + '\n')
-        except ValueError as e:
-            error = str(str(e.message) + ' for '+ path + '\n')
+
+        except Exception as e:
+            error = str('Error: ' + str(e) + ' for '+ path + '\n')
+
         return error
 
     def export(self):
@@ -369,7 +363,9 @@ class ImportExportView(BrowserView):
 
             # request files
             file_ = self.request.get('file')
+
             # files are at self.files
+            self.files = {}
             self.requestFile(file_)
 
             # file structure and analyser
