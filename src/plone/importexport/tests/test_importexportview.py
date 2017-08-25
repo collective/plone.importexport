@@ -14,16 +14,17 @@ import hashlib
 import fnmatch
 import os
 import json
+import copy
 
-def compare_files(a,b):
-    # create hash and compare
-    fileA = hashlib.sha256(a.read()).digest()
-    fileB = hashlib.sha256(b.read()).digest()
-    if fileA == fileB:
-        return True
-    else:
-        return False
-
+# def compare_files(a,b):
+#     # create hash and compare
+#     fileA = hashlib.sha256(a.read()).digest()
+#     fileB = hashlib.sha256(b.read()).digest()
+#     if fileA == fileB:
+#         return True
+#     else:
+#         return False
+#
 class TestData():
 
     def __init__(self):
@@ -31,8 +32,8 @@ class TestData():
         # test zip file
         testzip = ['..', '..', 'src', 'plone', 'importexport',
          'tests', 'ImportExportTest.zip']
-        zipfile = os.sep.join(testzip)
-        self.zip = open(zipfile, 'r')
+        self.zipname = os.sep.join(testzip)
+        self.zip = open(self.zipname, 'r')
         self.data = [
             {'version': u'current', 'text': {u'download': u'ImportExportTest/front-page/front-page.html', u'content-type': u'text/html', u'encoding': u'utf-8'}, 'id': u'front-page', 'UID': u'cfe123705f34495995c655fa08589066', 'title': u'Plone Conference 2017, Barcelona', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'description': u'Congratulations! You have successfully installed Plone.', 'expires': u'2017-06-16T23:40:00', 'path': u'ImportExportTest/front-page', 'language': u'en-us', 'effective': u'2017-06-16T23:40:00', 'rights': u'private', 'created': u'2017-08-25T12:00:51+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Document'},
             {'version': u'current', 'id': u'news', 'UID': u'df4d14681e0f4dd6bba272f3f588b3c3', 'title': u'News', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'description': u'Site News', 'path': u'ImportExportTest/news', 'language': u'en-us', 'effective': u'2017-08-04T13:11:00', 'rights': u'published', 'created': u'2017-08-25T12:00:51+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Folder'},
@@ -73,6 +74,10 @@ class TestData():
     def getzip(self):
         return self.zip
 
+    def getzipname(self):
+        return self.zipname
+
+
 class TestImportExportView(unittest.TestCase):
     """Test importexport view methods."""
 
@@ -88,7 +93,6 @@ class TestImportExportView(unittest.TestCase):
         self.request['method'] = 'POST'
         self.view = getMultiAdapter((self.portal, self.request),
             name="import-export")
-
 
     def test_template_renders(self):
         results = self.view()
@@ -116,6 +120,8 @@ class TestImportExportView(unittest.TestCase):
         if fnmatch.fnmatch(log, '*Error*'):
             self.fail("Failed in creating content")
 
+    '''deserialize funciton of plone.importexport module  is highly coupled and
+     thus unit case is too complex for this'''
     # def test_deserialize(self):
     #
     #     with api.env.adopt_roles(['Manager']):
@@ -124,7 +130,6 @@ class TestImportExportView(unittest.TestCase):
     #             if obj:
     #                 log = self.deserialize(obj, data)
     #             else:
-    #                 import pdb; pdb.set_trace()
     #                 self.fail("Error in fetching Parent object")
     #
     #             if fnmatch.fnmatch(log, '*Error*'):
@@ -146,41 +151,23 @@ class TestImportExportView(unittest.TestCase):
         try:
             # return a string of zip file
             export = self.view.export()
+
             # creating a file-like object
             export = StringIO(export)
+
+            f = utils.InMemoryZip()
+            self.assertIn('plone.csv', f.getfiles(export))
+
         except Exception as e:
             self.fail(e)
 
-            # Compare exported zip and test_import
-            # if not compare_files(export, self.zip):
-            #     self.fail("import export files didn't match")
+    def test_requestFile(self):
 
-    def test_getExistingpath(self):
-
-        # XXX: Assign some object to obj
-        obj = None
-
-        # get existing path under this object, may be after desearialiation
-
-    def test_getCommanpath(self):
-
+        self.view.requestFile(self.data.getzip())
         # get json data to create new context
-        pass
-
-    def test_getCommancontent(self):
-
-        # get json data to create new context
-        pass
-
-    def test_getobjcontext(self):
-
-        # get json data to create new context
-        pass
-
-    def requestFile(self):
-
-        # get json data to create new context
-        pass
+        if (self.data.getzipname()!=self.view.files.keys()[0]) or (
+            self.data.getzip()!=self.view.files.values()[0]):
+            self.fail()
 
     def test_import(self):
 
@@ -188,28 +175,100 @@ class TestImportExportView(unittest.TestCase):
             log = self.view.imports()
 
             if fnmatch.fnmatch(log, '*Error*'):
-                self.fail("Failing  is complete log for import: %s " %log)
+                self.fail("Failing log for import: \n %s " %log)
 
-    def getheaders(self):
+    def test_getExistingpath(self):
 
-        # get json data to create new context
-        pass
+        with api.env.adopt_roles(['Manager']):
 
-    def getmatrix(self):
+            # create path
+            data = [self.data.getData(contentType="Folder")]
+            self.view.createcontent(data)
 
-        # get json data to create new context
-        pass
+            query = os.sep.join(data[0]['path'].split('/')[1:])
+            self.assertIn(query, str(self.view.getExistingpath()))
 
-    def getExportfields(self):
+    def test_getCommanpath(self):
 
-        # get json data to create new context
-        pass
+        with api.env.adopt_roles(['Manager']):
 
-    def getImportfields(self):
+            # create path
+            data = [self.data.getData(contentType="Folder")]
+            self.view.createcontent(data)
 
-        # get json data to create new context
-        pass
+            query = data[0]['path'].split('/')[1:]
+            query = os.sep.join(query)
+            self.assertIn(query, str(self.view.getCommonpath([data[0]['path']])))
 
+    def test_getCommancontent(self):
+
+        with api.env.adopt_roles(['Manager']):
+
+            # create path
+            data = [self.data.getData(contentType="Folder")]
+            self.view.createcontent(data)
+
+            query = data[0]['path'].split('/')[1:]
+            query = os.sep.join(query)
+            self.assertIn(query, str(self.view.getCommancontent()))
+
+    def test_getobjcontext(self):
+
+        with api.env.adopt_roles(['Manager']):
+
+            # create path
+            data = [self.data.getData(contentType="Folder")]
+            self.view.createcontent(data)
+
+            query = data[0]['path'].split('/')[1:]
+            path = copy.deepcopy(query)
+            path.insert(0, 'plone')
+            query = os.sep.join(query)
+            self.assertIn(query, str(self.view.getobjcontext(path)))
+
+    def test_getheaders(self):
+
+        with api.env.adopt_roles(['Manager']):
+
+            # create path
+            data = [self.data.getData(contentType="Folder")]
+            self.view.createcontent(data)
+
+            headers = [
+                'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators'
+            ]
+
+
+            self.assertEqual(headers, self.view.getheaders())
+
+    def test_getmatrix(self):
+
+            headers = [
+                'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators'
+            ]
+
+            testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'effective', u'language', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', u'title', u'subjects', u'exclude_from_nav'], 4: [u'contributors', 'version']}
+
+            matrix = self.view.getmatrix(headers=headers, columns=4)
+            self.assertEqual(testmatrix, matrix)
+
+    def test_getExportfields(self):
+
+        with api.env.adopt_roles(['Manager']):
+
+            # create content
+            data = [self.data.getData(contentType="Folder")]
+            self.view.createcontent(data)
+
+            testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'effective', u'language', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', u'title', u'subjects', u'exclude_from_nav'], 4: [u'contributors', 'version']}
+
+            self.assertEqual(testmatrix, self.view.getExportfields())
+
+    def test_getImportfields(self):
+
+        testmatrix = {u'1': [u'file', u'limit', u'customViewFields', u'effective'], u'0': [u'relatedItems', u'expires', u'start', u'end'], u'3': [u'image', u'text', u'rights', u'description'], u'2': [u'sort_reversed', u'item_count', u'sort_on', u'query'], u'5': [u'created', u'@components', u'version', u'title'], u'4': [u'review_state', u'language', u'creators', u'modified'], u'6': []}
+
+        self.assertEqual(testmatrix, json.loads(self.view.getImportfields()))
 
 # class TestUtils(unittest.TestCase):
 #

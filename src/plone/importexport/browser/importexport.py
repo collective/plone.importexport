@@ -285,33 +285,57 @@ class ImportExportView(BrowserView):
             if member.portal_type != "Plone Site":
                     self.getExistingpath(member)
 
-    #  provide list of path that occured in Plone server and uploaded csv
+        return self.existingPath
+
+    #  provide list of path that occured in Plone server and dataPath
     def getCommonpath(self, dataPath):
 
         common = []
-
+        tempPath = []
         # get list of existingPath
         self.getExistingpath()
 
         for path in dataPath:
-            if path in self.existingPath:
+            path = path.split(os.sep)[1:]
+            path = os.sep.join(path)
+            tempPath.append(path)
+
+        for path in self.existingPath:
+            path = path.split(os.sep)[1:]
+            path = os.sep.join(path)
+
+            if path in tempPath:
                 common.append(path)
 
         return common
 
     # if creating new content against existing content
+    #  provide list of path that occured in Plone server and uploaded csv
     def getCommancontent(self):
 
-        # TODO get uploaded csv_file from advanced tab onClick
-        if not self.files:
-            return
+        # request files
+        file_ = self.request.get('file')
 
-        csv_file = self.files.getCsv()
+        # files are at self.files
+        self.files = {}
+        self.requestFile(file_)
+
+        # file structure and analyser
+        self.files = utils.fileAnalyse(self.files)
+
+        if not self.files.getCsv():
+            matrix = {'Error': 'No csv Provided'}
+
+            # JS requires json dump
+            matrix = json.dumps(matrix)
+
+            return matrix
 
         # get path form csv_file
         conversion = utils.Pipeline()
-        jsonList = conversion.converttojson(data=csv_file, header=['path'])
+        jsonList = conversion.converttojson(data=self.files.getCsv(), header=['path'])
 
+        path_ = []
         for element in jsonList:
             path_.append(element.get('path', None))
 
@@ -475,8 +499,6 @@ class ImportExportView(BrowserView):
             rows = int(rows) + 1
 
         for index in range(rows):
-            if count<1:
-                continue
             matrix[index] = []
             for i in range(columns):
                 if count<1:
@@ -502,6 +524,7 @@ class ImportExportView(BrowserView):
         global MUST_INCLUDED_ATTRIBUTES
 
         try:
+            self.files = {}
             # request files
             file_ = self.request.get('file')
             # files are at self.files
