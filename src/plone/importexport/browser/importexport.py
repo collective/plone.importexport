@@ -52,8 +52,6 @@ class ImportExportView(BrowserView):
         self.importHeaders = None
         self.existingPath = []
         self.files = {}
-        # self.uploadedfile = 'None'
-        # print "initiated"
 
     # this will del MUST_EXCLUDED_ATTRIBUTES from data till leaves of the tree
     def exclude_attributes(self, data):

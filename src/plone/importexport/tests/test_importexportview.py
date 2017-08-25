@@ -78,7 +78,6 @@ class TestData():
     def getzipname(self):
         return self.zipname
 
-
 class TestImportExportView(unittest.TestCase):
     """Test importexport view methods."""
 
@@ -88,11 +87,11 @@ class TestImportExportView(unittest.TestCase):
         """Custom shared utility setup for tests."""
 
         self.data = TestData()
-        self.portal = self.layer['portal']
+        self.context = self.layer['portal']
         self.request = self.layer['request']
         self.request['file'] = self.data.getzip()
         self.request['method'] = 'POST'
-        self.view = getMultiAdapter((self.portal, self.request),
+        self.view = getMultiAdapter((self.context, self.request),
             name="import-export")
 
     def test_template_renders(self):
@@ -140,9 +139,9 @@ class TestImportExportView(unittest.TestCase):
 
         with api.env.adopt_roles(['Manager']):
             # it's important to inject some data
-            # FIXME Require a method from unit test, which inject default Plone data at time of creation self.portal
+            # FIXME Require a method from unit test, which inject default Plone data at time of creation self.context
             self.view.createcontent([self.data.getData(contentType='Folder')])
-            results = self.view.serialize(self.portal)
+            results = self.view.serialize(self.context)
 
         # XXX: Validate results
         self.assertIn('@type', json.dumps(results))
@@ -308,11 +307,11 @@ class TestfileAnalyse(unittest.TestCase):
     def setUp(self):
 
         self.data = TestData()
-        self.portal = self.layer['portal']
+        self.context = self.layer['portal']
         self.request = self.layer['request']
         self.request['file'] = self.data.getzip()
         self.request['method'] = 'POST'
-        self.view = getMultiAdapter((self.portal, self.request),
+        self.view = getMultiAdapter((self.context, self.request),
             name="import-export")
 
         self.view.requestFile(self.data.getzip())
@@ -342,13 +341,13 @@ class Testmapping(unittest.TestCase):
 
     def setUp(self):
 
-        self.portal = self.layer['portal']
+        self.context = self.layer['portal']
         self.data = TestData()
         self.mapping = utils.mapping(self)
         self.request = self.layer['request']
         self.request['file'] = self.data.getzip()
         self.request['method'] = 'POST'
-        self.view = getMultiAdapter((self.portal, self.request),
+        self.view = getMultiAdapter((self.context, self.request),
             name="import-export")
 
 
@@ -400,5 +399,109 @@ class Testmapping(unittest.TestCase):
         #     data = json.dumps(data)
         #     mappedData = self.mapping.internallink(data)
         #     if fnmatch.fnmatch(data, ('*'+uid+'*')):
-        #         import pdb; pdb.set_trace()
         #         self.fail()
+
+class TestPipeline(unittest.TestCase):
+
+    layer = PLONE_IMPORTEXPORT_INTEGRATION_TESTING
+
+    def setUp(self):
+
+        self.data = TestData()
+        self.context = self.layer['portal']
+        self.request = self.layer['request']
+        self.request['file'] = self.data.getzip()
+        self.request['method'] = 'POST'
+        self.view = getMultiAdapter((self.context, self.request),
+            name="import-export")
+        self.zip = utils.InMemoryZip()
+        self.view.requestFile(self.data.getzip())
+        self.fileAnalyse = utils.fileAnalyse(self.view.files)
+        self.pipeline = utils.Pipeline()
+        self.mapping = utils.mapping(self)
+
+    def test_getcsvheaders(self):
+
+        testData = [
+        'id', 'UID', 'title', 'version', '@components', 'path', 'created', 'modified', 'creators', '@type', 'review_state', 'language', 'description', 'rights', 'image', 'query', 'sort_on', 'item_count', 'sort_reversed', 'effective', 'customViewFields', 'limit', 'text', 'file', 'end', 'start', 'expires', 'relatedItems'
+        ]
+        self.assertEqual(testData, self.pipeline.getcsvheaders(self.data.getData()))
+
+    def test_convertjson(self):
+
+        with api.env.adopt_roles(['Manager']):
+            log = self.view.imports()
+            exportFormat = {
+             'csv': 'plone.csvPK',
+             'combined': 'plone.csvPK',
+             'files': 'plone/14-ist.webm/14  IST.webmPK'}
+            data_list= self.view.serialize(self.context)
+            csv_headers=self.pipeline.getcsvheaders(self.data.getData())
+
+            for formats in exportFormat.keys():
+                self.request['exportFormat'] = formats
+                self.zip = utils.InMemoryZip()
+
+                self.pipeline.convertjson(obj=self, data_list=data_list,
+                 csv_headers=csv_headers)
+
+                # self.assertEqual(self.zip.read(), exportFormat[formats])
+                self.assertIn(exportFormat[formats], self.zip.read())
+
+    def test_getblob(self):
+        with api.env.adopt_roles(['Manager']):
+            log = self.view.imports()
+            test_dataFormat = ['Document', 'News Item']
+            data_list= self.view.serialize(self.context)
+
+            for data in data_list:
+                tempData = copy.deepcopy(data)
+                if data.get('@type') in test_dataFormat:
+                    for key in data.keys():
+                        if not data[key]:
+                            continue
+                        self.pipeline.getblob(self, data[key], data['path'])
+                        if tempData[key]!=data[key]:
+                            self.assertIn('download', data[key])
+
+                    test_dataFormat.remove(data.get('@type'))
+
+    def test_converttojson(self):
+        csvData = '"fieldA", "fieldB", \n "A","B"'
+        jsonList = [{}, {}, {}, {}, {}, {}, {}, {}, {}]
+        self.assertEqual(jsonList, self.pipeline.converttojson(data=csvData, header='fieldB'))
+
+    def test_jsonify(self):
+        testData = {'description': u'Site News', 'effective': u'2017-08-04T13:11:00', 'path': u'ImportExportTest/news', 'id': u'news', 'UID': u'df4d14681e0f4dd6bba272f3f588b3c3', 'language': u'en-us', 'rights': u'published', 'title': u'News', 'modified': u'2017-08-25T12:01:37+05:30', 'created': u'2017-08-25T12:00:51+05:30', 'version': u'current', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'creators': [u'admin'], '@type': u'Folder'}
+        self.assertEqual(testData, self.pipeline.jsonify(self.data.getData(contentType='Folder')))
+
+    def test_filter_keys(self):
+        jsonList = [{'@id':'skdjf'}, {'path':'test'}, {'key':'Null'},
+            {'key':'Field NA'}, {}, {}, {}, {}, {}]
+
+        self.pipeline.filter_keys(jsonList, excluded=['@id'])
+        self.assertEqual([{}, {'path': 'test'}, {}, {}, {}, {}, {}, {}, {}],
+         jsonList)
+        pass
+
+    def test_fillblobintojson(self):
+        # request files
+        file_ = self.request.get('file')
+
+        # files are at self.files
+        self.view.files = {}
+        self.view.requestFile(file_)
+
+        # file structure and analyser
+        self.files = utils.fileAnalyse(self.view.files)
+
+        # convert csv to json
+        data = self.pipeline.converttojson(data=self.files.getCsv(), header=[])
+
+        for index in range(len(data)):
+
+            obj_data = data[index]
+            obj_data, temp_log = self.pipeline.fillblobintojson(
+            obj_data, self.files.getFiles(), self.mapping)
+            if fnmatch.fnmatch(temp_log, ('*'+'Error'+'*')):
+                self.fail()

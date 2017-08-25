@@ -88,6 +88,7 @@ class Pipeline(object):
             result.append(key[0])
         return result
 
+    # converts json list to into zip of csv and BLOB
     def convertjson(self, obj, data_list, csv_headers):
         csv_output = cStringIO.StringIO()
 
@@ -116,6 +117,7 @@ class Pipeline(object):
                 for key in data.keys():
                     if not data[key]:
                         data[key] = "Null"
+                        continue
 
                     if exportType=="files" or exportType=="combined":
                         data[key] = self.getblob(obj, data[key], data['path'])
@@ -123,13 +125,16 @@ class Pipeline(object):
                    # converting list and dict to quoted json
                     data[key] = json.dumps(data[key])
 
+
                 writer.writerow(data)
         except IOError as (errno, strerror):
                 print("I/O error({0}): {1}".format(errno, strerror))
         else:
             if exportType=="csv" or exportType=="combined":
                 obj.zip.append(id_+'.csv', csv_output.getvalue())
-            csv_output.close()
+
+        csv_output.close()
+
 
         return
 
