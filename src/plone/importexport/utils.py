@@ -350,6 +350,11 @@ class fileAnalyse(object):
         return type_
 
     # return csv from uploaded files
+    '''
+    After unzipping the zip
+    accepted type = BLABLABBLA/name.csv
+    unaccepted type = BLABLABBLA/name.csv/something
+    '''
     def findcsv(self):
         # the zip may also have csv content of site
         ignore = str('*'+ os.sep + '*')
@@ -365,6 +370,7 @@ class fileAnalyse(object):
         return self.csv_file
 
     def getCsv(self):
+        self.csv_file.seek(0)
         return self.csv_file
 
     # unzip the zip and restructure the dict
