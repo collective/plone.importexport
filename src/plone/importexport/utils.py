@@ -122,8 +122,8 @@ class Pipeline(object):
                     if exportType=="files" or exportType=="combined":
                         data[key] = self.getblob(obj, data[key], data['path'])
 
-                   # converting list and dict to quoted json
-                    data[key] = json.dumps(data[key])
+                        # converting list and dict to quoted json
+                        data[key] = json.dumps(data[key])
 
 
                 writer.writerow(data)
