@@ -270,22 +270,43 @@ class TestImportExportView(unittest.TestCase):
 
         self.assertEqual(testmatrix, json.loads(self.view.getImportfields()))
 
-# class TestUtils(unittest.TestCase):
+class TestInMemoryZip(unittest.TestCase):
+
+    layer = PLONE_IMPORTEXPORT_INTEGRATION_TESTING
+
+    def setUp(self):
+
+        self.InMemoryZip = utils.InMemoryZip()
+        self.data = TestData()
+
+    def test_memzip(self):
+
+        filename = 'added'
+        filedata = 'testdata'
+
+        self.InMemoryZip.append(filename, filedata)
+        data = self.InMemoryZip.read()
+
+        data = StringIO(data)
+        zipfile = self.InMemoryZip.getfiles(data)
+
+        self.assertEqual(filename, zipfile.keys()[0])
+        self.assertEqual(filedata, zipfile.values()[0].read())
+
+    def test_getfiles(self):
+
+        testfiles = [
+            'ImportExportTest/', 'test_folder/test.jpg', 'ImportExportTest/14-ist.webm/14  IST.webm', 'ImportExportTest/14-ist.webm/', 'ImportExportTest/news/aggregator/aggregator.html', 'ImportExportTest/news/conference-website-online/58963_10200248622793289_1140334088_n.jpg', 'ImportExportTest/front-page/front-page.html', 'ImportExportTest.csv', 'test_folder/', 'ImportExportTest/Members/635861-game-wallpaper.jpg/', 'ImportExportTest/test.csv/test.csv', 'ImportExportTest/Members/', 'ImportExportTest/front-page/', 'ImportExportTest/test.csv/', 'test.html', 'ImportExportTest/news/conference-website-online/', 'ImportExportTest/news/aggregator/', 'ImportExportTest/news/', 'ImportExportTest/Members/635861-game-wallpaper.jpg/635861-game-wallpaper.jpg'
+        ]
+
+        files = self.InMemoryZip.getfiles(self.data.getzip())
+        self.assertEqual(testfiles, files.keys())
+
+# class TestfileAnalyse(unittest.TestCase):
 #
-#     def setup(self):
-#         self.Pipeline = utils.Pipeline()
-#         self.mapping = utils.mapping()
-#         self.InMemoryZip = utils.InMemoryZip()
+#     layer = PLONE_IMPORTEXPORT_INTEGRATION_TESTING
+#
+#     def setUp(self):
+#
 #         self.fileAnalyse = utils.fileAnalyse()
-#
-#     def test_fileanalyse(self):
-#         pass
-#
-#     def test_mapping(self):
-#         pass
-#
-#     def test_pipeline(self):
-#         pass
-#
-#     def test_memzip(self):
-#         pass
+#         self.data = TestData()

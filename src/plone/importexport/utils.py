@@ -32,8 +32,6 @@ class InMemoryZip(object):
         for zfile in zf.filelist:
             zfile.create_system = 0
 
-        return self
-
     def read(self):
         '''Returns a string with the contents of the in-memory zip.'''
         self.in_memory_zip.seek(0)
