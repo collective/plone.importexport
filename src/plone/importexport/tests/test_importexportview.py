@@ -273,8 +273,6 @@ class TestImportExportView(unittest.TestCase):
 
 class TestInMemoryZip(unittest.TestCase):
 
-    layer = PLONE_IMPORTEXPORT_INTEGRATION_TESTING
-
     def setUp(self):
 
         self.InMemoryZip = utils.InMemoryZip()
@@ -337,3 +335,70 @@ class TestfileAnalyse(unittest.TestCase):
     def test_getFiletype(self):
 
         self.assertEqual('csv', self.fileAnalyse.getFiletype(filename='ImportExportTest/test.csv/test.csv'))
+
+class Testmapping(unittest.TestCase):
+
+    layer = PLONE_IMPORTEXPORT_INTEGRATION_TESTING
+
+    def setUp(self):
+
+        self.portal = self.layer['portal']
+        self.data = TestData()
+        self.mapping = utils.mapping(self)
+        self.request = self.layer['request']
+        self.request['file'] = self.data.getzip()
+        self.request['method'] = 'POST'
+        self.view = getMultiAdapter((self.portal, self.request),
+            name="import-export")
+
+
+    def getobjcontext(self, path):
+        return self.view.getobjcontext(path)
+
+    def test_mapNewUID(self):
+
+        with api.env.adopt_roles(['Manager']):
+            for data in self.data.getData():
+                log = self.view.createcontent([data])
+                path = data.get('path').split('/')[1:]
+                path.insert(0, 'plone')
+                path = os.sep.join(path)
+                data['path'] = path
+                uid = data.get('UID')
+
+
+                mapping = self.mapping.mapNewUID([data])
+                mappedData = self.mapping.internallink(json.dumps(data))
+
+                if not fnmatch.fnmatch(json.dumps(mapping), ('*'+uid+'*')):
+                    self.fail()
+
+                if fnmatch.fnmatch(mappedData, ('*'+uid+'*')):
+                    self.fail()
+
+    def test_getUID(self):
+
+        data = [self.data.getData(contentType="Folder")]
+
+        with api.env.adopt_roles(['Manager']):
+            log = self.view.createcontent(data)
+            path = data[0]['path'].split('/')[1:]
+            path.insert(0, 'plone')
+            path = os.sep.join(path)
+            uid = data[0].get('UID')
+
+            newUID = self.mapping.getUID(path)
+
+            if uid==newUID:
+                self.fail()
+
+    def test_internallink(self):
+
+        pass
+        # for data in self.data.getData():
+        #     uid = data.get('UID')
+        #     data = json.dumps(data)
+        #     mappedData = self.mapping.internallink(data)
+        #     if fnmatch.fnmatch(data, ('*'+uid+'*')):
+        #         import pdb; pdb.set_trace()
+        #         self.fail()
