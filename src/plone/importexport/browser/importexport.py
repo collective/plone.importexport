@@ -69,9 +69,15 @@ class ImportExportView(BrowserView):
                     for index in range(len(data[key])):
                         self.exclude_attributes(data[key][index])
 
+    '''
+    Caution: last element of returned list is always a string of errors
+    This funciton serialize obj
+    '''
     def serialize(self, obj):
 
         results = []
+        errorLog = ''
+
         serializer = queryMultiAdapter((obj, self.request), ISerializeToJson)
 
         data = serializer()
@@ -89,10 +95,13 @@ class ImportExportView(BrowserView):
             # FIXME: defualt plone config @portal_type?
             if member.portal_type != "Plone Site":
                 try:
-                    results += self.serialize(member)
-                except ImportExportError as e:
-                    error = e.message + ' for ' + data['path']
-                    raise ImportExportError(error)
+                    objData = self.serialize(member)
+                    results += objData[:-1]
+                    if objData[-1]!= '':
+                        errorLog += objData[-1]
+                except Exception as e:
+                    errorLog += str('Error: ' + repr(e) + ' for '+ str(member.absolute_url_path()[1:]) + '\n')
+        results.append(errorLog)
         return results
 
     # context == requested object, data=metadata for object in json string
@@ -134,7 +143,7 @@ class ImportExportView(BrowserView):
             return "Success for {} \n".format(path)
 
         except Exception as e:
-            error = str('Error: ' + str(e) + ' for '+ path + '\n')
+            error = str('Error: ' + repr(e) + ' for '+ path + '\n')
 
         return error
 
@@ -183,7 +192,11 @@ class ImportExportView(BrowserView):
                 headers.insert(0, element)
 
             # results is a list of dicts
-            results = self.serialize(self.context)
+            objData = self.serialize(self.context)
+            results = objData[:-1]
+            if objData[-1]!= '':
+                errorLog = objData[-1]
+                self.zip.append('errorLog.txt', errorLog)
 
             self.conversion.convertjson(self, results, headers)
 
@@ -474,7 +487,10 @@ class ImportExportView(BrowserView):
         if self.exportHeaders:
             return self.exportHeaders
 
-        data = self.serialize(self.context)
+        objData = self.serialize(self.context)
+        data = objData[:-1]
+        if objData[-1]!= '':
+            errorLog = objData[-1]
 
         conversion = utils.Pipeline()
         head = conversion.getcsvheaders(data)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# ./bin/test -s plone.importexport -t test_importexportview
+# ./bin/test -s plone.importexport -t test_importexport
 
 """Setup tests for this package."""
 from plone.importexport.testing import PLONE_IMPORTEXPORT_INTEGRATION_TESTING  # noqa
@@ -135,6 +135,8 @@ class TestImportExportView(unittest.TestCase):
             results = self.view.serialize(self.context)
 
         # XXX: Validate results
+        if fnmatch.fnmatch(json.dumps(results), '*Error*'):
+            self.fail("Error while serializing \n %s" %results[-1])
         self.assertIn('@type', json.dumps(results))
 
     def test_export(self):
@@ -426,7 +428,7 @@ class TestPipeline(unittest.TestCase):
              'csv': 'plone.csvPK',
              'combined': 'plone.csvPK',
              'files': 'plone/14-ist.webm/14  IST.webmPK'}
-            data_list= self.view.serialize(self.context)
+            data_list= self.view.serialize(self.context)[:-1]
             csv_headers=self.pipeline.getcsvheaders(self.data.getData())
 
             for formats in exportFormat.keys():
@@ -443,7 +445,7 @@ class TestPipeline(unittest.TestCase):
         with api.env.adopt_roles(['Manager']):
             log = self.view.imports()
             test_dataFormat = ['Document', 'News Item']
-            data_list= self.view.serialize(self.context)
+            data_list= self.view.serialize(self.context)[:-1]
 
             for data in data_list:
                 tempData = copy.deepcopy(data)
