@@ -167,18 +167,12 @@ class ImportExportView(BrowserView):
             if self.request.get('exportFields', None) and (exportType=='csv' or exportType=='combined'):
 
                 # fields/keys to include
-                include = self.request.get('exportFields', None)
-                # BUG in html checkbox input, which send value as a string if only one value have been checked
-                if isinstance(include, str):
-                    include = [include]
-                include = list(set(MUST_INCLUDED_ATTRIBUTES +
-                    include))
-
-                # fields/keys to include
-                headers = self.request.get('fields', None)
+                headers = self.request.get('exportFields', None)
                 # BUG in html checkbox input, which send value as a string if only one value have been checked
                 if isinstance(headers, str):
                     headers = [headers]
+                headers = list(set(MUST_INCLUDED_ATTRIBUTES +
+                    headers))
 
             else:
                 # 'No check provided. Thus exporting whole content'
