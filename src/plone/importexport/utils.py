@@ -9,6 +9,7 @@ import json
 from plone.uuid.interfaces import IUUID
 from plone.importexport.exceptions import ImportExportError
 import fnmatch
+from bs4 import BeautifulSoup
 
 class InMemoryZip(object):
 
@@ -330,11 +331,21 @@ class mapping(object):
         uuid = IUUID(context, None)
         return uuid
 
-    # replacing old_UID with new_uid
+    # replacing old_UID with new_uid, this method is only called for html data
     def internallink(self, data):
-        for uid in self.mapping.keys():
-            data = data.replace(uid, self.mapping[uid])
-        return data
+
+        soup = BeautifulSoup(data, "html.parser")
+
+        for link in soup.find_all('a'):
+
+            linktype = link.get('data-linktype')
+
+            if linktype=='internal':
+                oldUid = link.get('data-val')
+                if self.mapping.get(oldUid):
+                        link['href'] = 'resolveuid/' + str(self.mapping[oldUid])
+                        link['data-val']= self.mapping[oldUid]
+        return str(soup)
 
 
 class fileAnalyse(object):
