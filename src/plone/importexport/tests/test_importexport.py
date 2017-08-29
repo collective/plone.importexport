@@ -360,12 +360,8 @@ class Testmapping(unittest.TestCase):
 
 
                 mapping = self.mapping.mapNewUID([data])
-                mappedData = self.mapping.internallink(json.dumps(data))
 
-                if not fnmatch.fnmatch(json.dumps(mapping), ('*'+uid+'*')):
-                    self.fail()
-
-                if fnmatch.fnmatch(mappedData, ('*'+uid+'*')):
+                if uid not in mapping.keys():
                     self.fail()
 
     def test_getUID(self):
@@ -384,6 +380,7 @@ class Testmapping(unittest.TestCase):
             if uid==newUID:
                 self.fail()
 
+    # TODO
     def test_internallink(self):
 
         pass
