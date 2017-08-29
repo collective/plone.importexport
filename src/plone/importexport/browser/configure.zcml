@@ -13,15 +13,32 @@
     <browser:page
         for="Products.CMFCore.interfaces.IFolderish"
         name="import-export"
-        class=".view.ImportExportView"
+        class=".importexport.ImportExportView"
         permission="cmf.ModifyPortalContent"
+        template = "templates/importexport.pt"
         />
 
     <browser:page
         for="Products.CMFCore.interfaces.IFolderish"
         name="export"
-        class=".view.ImportExportView"
+        class=".importexport.ImportExportView"
         attribute="export"
+        permission="cmf.ModifyPortalContent"
+        />
+
+    <browser:page
+        for="Products.CMFCore.interfaces.IFolderish"
+        name="imports"
+        class=".importexport.ImportExportView"
+        attribute="imports"
+        permission="cmf.ModifyPortalContent"
+        />
+
+    <browser:page
+        for="Products.CMFCore.interfaces.IFolderish"
+        name="getImportfields"
+        class=".importexport.ImportExportView"
+        attribute ="getImportfields"
         permission="cmf.ModifyPortalContent"
         />
 

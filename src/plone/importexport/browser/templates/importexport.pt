@@ -1,0 +1,199 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+xmlns:tal="http://xml.zope.org/namespaces/tal"
+xmlns:metal="http://xml.zope.org/namespaces/metal"
+xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+lang="en"
+metal:use-macro="context/main_template/macros/master"
+i18n:domain="plone">
+<head>
+
+</head>
+<body>
+  <metal:js fill-slot="javascript_head_slot">
+    <script type="text/javascript" src="++resource++plone.importexport/import_export.js"></script>
+  </metal:js>
+
+  <metal:content fill-slot="content-core">
+
+  <div class="pat-autotoc autotabs" data-pat-autotoc="section:fieldset;
+    levels:legend;">
+
+    <!-- Basic Tab -->
+    <fieldset>
+      <legend i18n:translate="">Basic</legend>
+
+      <!-- Basic Export -->
+      <section>
+
+        <h2 i18n:translate="">Export</h2>
+
+        <form action="export" method="POST">
+          <input type="submit" name="export" value="Export"
+            i18n:attributes="value" />
+        </form>
+
+      </section>
+
+      <!-- Basic Import -->
+      <section>
+
+        <!-- <input class="pat-pickadate" data-pat-pickadate="time:true"/> -->
+        <h2 i18n:translate="">Import</h2>
+
+        <!-- <div class="field">
+            <div class="formHelp" i18n:translate="import_basic_importfile_help">
+            Select a CSV or a ZIP file providing the contents to import.
+          </div>
+          <input type="file" name="importfile"  />
+        </div> -->
+
+        <form action="imports" enctype="multipart/form-data" method="POST">
+           <div class="field">
+             <label for="importfile">File</label>
+             <div class="formHelp" i18n:translate="import_basic_importfile_help">
+               Select a CSV or a ZIP file providing the contents to import.
+             </div>
+             <input type="file" name="file" multiple="multiple" />
+           </div>
+           <input type="submit" name="imports" value="Import" i18n:attributes="value" />
+        </form>
+
+        <!-- <form action="imports" method="POST">
+          <div class="pat-upload" data-pat-upload='{
+            "showTitle": false
+            }'>
+          </div>
+        </form> -->
+      </section>
+
+    </fieldset>
+
+    <!-- Advance Tab -->
+    <fieldset>
+      <legend i18n:translate="">Advance</legend>
+
+      <div class="pat-autotoc autotabs" data-pat-autotoc="section:subfieldset;
+        levels:h1;">
+
+      <!-- Advance Export -->
+      <subfieldset>
+        <h1 i18n:translate="">Export</h1>
+
+        <form action="export" method="POST">
+
+          <label> Specify Export type </label>
+          <br>
+
+          <input type="radio" name="exportFormat" value="csv" >
+            Only csv
+          </input>
+
+          <input type="radio" name="exportFormat" value="files" >
+            Only files
+          </input>
+
+          <input type="radio" name="exportFormat" value="combined" checked="checked">
+            Combined
+          </input>
+
+          <br>
+          <br>
+
+          <label> Specify fields to export </label>
+          <h5> Defualt fields:{@type, path, id, UID}</h5>
+          <h5> Caution: If nothing is selected, all fields will be exported</h5>
+          <section>
+
+            <div >
+              <input type="button" onclick= "selectAll('exportFields')"  value="Select all"
+                name="Select"/>
+              <input type="button" onclick="deselectAll('exportFields')" value="Deselect all"
+                name="Deselect"/>
+            </div>
+
+            <table>
+              <tr tal:repeat="val python: view.getExportfields().values()">
+                <td tal:repeat="index python: range(len(val))">
+                  <input type="checkbox" name='exportFields' value='null'
+                    tal:attributes="value python: val[index]">
+                  <p tal:content="text python: val[index]">
+                    field
+                  </p>
+                  </input>
+                </td>
+              </tr>
+            </table>
+
+          </section>
+
+          <br>
+
+          <!-- <div id="change"></div>
+          <input type = "button" onclick = "Fun()" name = "Select"
+             value = "Click Me" /> -->
+
+          <input type="submit" name="export" value="Export"
+            i18n:attributes="value" />
+
+        </form>
+
+      </subfieldset>
+
+      <!-- Advance Import -->
+      <subfieldset tal:define="exist python: True">
+
+        <h1 i18n:translate="">Import</h1>
+
+          <div>
+
+            <form action="imports" enctype="multipart/form-data" method="POST">
+
+              <!-- File Import mechanism -->
+              <div class="field">
+                <label for="importfile">File</label>
+                <div class="formHelp" i18n:translate="import_basic_importfile_help">
+                  Select a CSV or a ZIP file providing the contents to import.
+                </div>
+                <input id="uploadID" type="file" name="file" multiple="multiple" />
+
+              </div>
+
+              <div id="table">
+
+
+                <!-- dumb method using tal mechanism, which is not in use anymore-->
+                <div >
+                  <!-- <table cellspacing="0" cellpadding="0" border="0'">
+                    <tr tal:repeat="val python: view.getImportfields().values()">
+                      <td tal:repeat="index python: range(len(val))">
+                        <input type="checkbox" name='importFields' value='null'
+                          tal:attributes="value python: val[index]">
+                        <p tal:content="text python: val[index]">
+                          field
+                        </p>
+                        </input>
+                      </td>
+                    </tr>
+                  </table> -->
+                </div>
+
+                <!-- this is where create new option will render -->
+                <div id="createNew">
+                </div>
+
+              </div>
+
+            </form>
+
+          </div>
+
+      </subfieldset>
+
+      </div>
+    </fieldset>
+
+  </div>
+
+  </metal:content>
+</body>
+</html>

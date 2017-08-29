@@ -24,9 +24,3 @@ class TestSetup(unittest.TestCase):
         """Test if plone.importexport is cleanly uninstalled."""
         self.installer.uninstallProducts(['plone.importexport'])
         self.assertFalse(self.installer.isProductInstalled('plone.importexport'))
-
-    def test_browserlayer(self):
-        """Test that IPloneImportexportLayer is registered."""
-        from plone.importexport.interfaces import IPloneImportexportLayer
-        from plone.browserlayer import utils
-        self.assertIn(IPloneImportexportLayer, utils.registered_layers())

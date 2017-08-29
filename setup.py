@@ -44,6 +44,7 @@ setup(
         'plone.api',
         'setuptools',
         'plone.restapi',
+        'bs4'
     ],
     extras_require={
         'test': [

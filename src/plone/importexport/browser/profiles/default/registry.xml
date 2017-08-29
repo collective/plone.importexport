@@ -1,0 +1,4 @@
+<records prefix="plone.resources/importexport-view"
+            interface='Products.CMFPlone.interfaces.IResourceRegistry'>
+      <value key="js">++resource++plone.importexport/import_export.js</value>
+</records>
