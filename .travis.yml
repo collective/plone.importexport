@@ -1,17 +1,29 @@
 language: python
-python:
-  - 2.7
+python: 2.7
+sudo: false
+cache:
+  directories:
+  - eggs
+env:
+- PLONE_VERSION=4.3
+- PLONE_VERSION=5.0
+- PLONE_VERSION=5.1
+matrix:
+  fast_finish: true
+before_install:
+- pip install coveralls pylint
 install:
-  - mkdir -p buildout-cache/{eggs,downloads}
-  - python bootstrap-buildout.py -c travis.cfg
-  - bin/buildout -Nc travis.cfg
+- sed -ie "s#test-5.1#test-$PLONE_VERSION#" buildout.cfg
+- python bootstrap-buildout.py
+- bin/buildout annotate
+- bin/buildout
 script:
-  - bin/test
-  - bin/createcoverage
+- bin/code-analysis
+- bin/test
+- pylint --py3k --disable=no-absolute-import src/plone/importexport
 after_success:
-  - pip install coveralls
-  - coveralls
-
+- bin/createcoverage --output-dir=htmlcov
+- coveralls
 notifications:
   email:
     - ebrehault@gmail.com
