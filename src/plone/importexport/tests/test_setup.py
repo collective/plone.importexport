@@ -17,10 +17,13 @@ class TestSetup(unittest.TestCase):
         self.installer = api.portal.get_tool('portal_quickinstaller')
 
     def test_product_installed(self):
-        """Test if plone.importexport is installed with portal_quickinstaller."""
-        self.assertTrue(self.installer.isProductInstalled('plone.importexport'))
+        """Test if plone.importexport is installed
+        with portal_quickinstaller."""
+        self.assertTrue(self.installer.isProductInstalled(
+            'plone.importexport'))
 
     def test_uninstall(self):
         """Test if plone.importexport is cleanly uninstalled."""
         self.installer.uninstallProducts(['plone.importexport'])
-        self.assertFalse(self.installer.isProductInstalled('plone.importexport'))
+        self.assertFalse(self.installer.isProductInstalled(
+            'plone.importexport'))

@@ -87,7 +87,9 @@ class TestImportExportView(unittest.TestCase):
     def test_template_renders(self):
         results = self.view()
         # XXX: Check some string from this template
-        self.assertIn("Select a CSV or a ZIP file providing the contents to import.", results)
+        self.assertIn(
+            "Select a CSV or a ZIP file providing the contents to import.",
+            results)
 
     def test_exclude_attributes(self):
 
@@ -130,7 +132,8 @@ class TestImportExportView(unittest.TestCase):
 
         with api.env.adopt_roles(['Manager']):
             # it's important to inject some data
-            # FIXME Require a method from unit test, which inject default Plone data at time of creation self.context
+            # FIXME Require a method from unit test,
+            # which inject default Plone data at time of creation self.context
             self.view.createcontent([self.data.getData(contentType='Folder')])
             results = self.view.serialize(self.context)
 
@@ -191,7 +194,8 @@ class TestImportExportView(unittest.TestCase):
 
             query = data[0]['path'].split('/')[1:]
             query = os.sep.join(query)
-            self.assertIn(query, str(self.view.getCommonpath([data[0]['path']])))
+            self.assertIn(query,
+                          str(self.view.getCommonpath([data[0]['path']])))
 
     def test_getCommancontent(self):
 
@@ -326,7 +330,8 @@ class TestfileAnalyse(unittest.TestCase):
 
     def test_getFiletype(self):
 
-        self.assertEqual('csv', self.fileAnalyse.getFiletype(filename='ImportExportTest/test.csv/test.csv'))
+        self.assertEqual('csv', self.fileAnalyse.getFiletype(
+            filename='ImportExportTest/test.csv/test.csv'))
 
 
 class Testmapping(unittest.TestCase):
@@ -414,7 +419,8 @@ class TestPipeline(unittest.TestCase):
         testData = [
             'id', 'UID', 'title', 'version', '@components', 'path', 'created', 'modified', 'creators', '@type', 'language', 'review_state', 'description', 'rights', 'text', 'image', 'query', 'sort_on', 'item_count', 'sort_reversed', 'effective', 'customViewFields', 'limit', 'file', 'end', 'start', 'expires', 'relatedItems'
         ]
-        self.assertEqual(testData, self.pipeline.getcsvheaders(self.data.getData()))
+        self.assertEqual(testData, self.pipeline.getcsvheaders(
+            self.data.getData()))
 
     def test_convertjson(self):
 
@@ -458,11 +464,13 @@ class TestPipeline(unittest.TestCase):
     def test_converttojson(self):
         csvData = '"fieldA", "fieldB", \n "A","B"'
         jsonList = [{}, {}, {}, {}, {}, {}, {}, {}, {}]
-        self.assertEqual(jsonList, self.pipeline.converttojson(data=csvData, header='fieldB'))
+        self.assertEqual(jsonList, self.pipeline.converttojson(
+            data=csvData, header='fieldB'))
 
     def test_jsonify(self):
         testData = {'description': u'Site News', 'effective': u'2017-08-04T13:11:00', 'path': u'ImportExportTest/news', 'id': u'news', 'UID': u'df4d14681e0f4dd6bba272f3f588b3c3', 'language': u'en-us', 'rights': u'published', 'title': u'News', 'modified': u'2017-08-25T12:01:37+05:30', 'created': u'2017-08-25T12:00:51+05:30', 'version': u'current', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'creators': [u'admin'], '@type': u'Folder'}
-        self.assertEqual(testData, self.pipeline.jsonify(self.data.getData(contentType='Folder')))
+        self.assertEqual(testData, self.pipeline.jsonify(
+            self.data.getData(contentType='Folder')))
 
     def test_filter_keys(self):
         jsonList = [{'@id': 'skdjf'}, {'path': 'test'}, {'key': 'Null'},

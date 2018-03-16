@@ -30,7 +30,8 @@ global MUST_INCLUDED_ATTRIBUTES
     excluding it from the exported data
 '''
 MUST_EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
-                            'scales', 'items_total', 'table_of_contents', 'layout']
+                            'scales', 'items_total', 'table_of_contents',
+                            'layout']
 
 # these attributes must be included while importing
 MUST_INCLUDED_ATTRIBUTES = ['@type', 'path', 'id', 'UID']
@@ -104,7 +105,7 @@ class ImportExportView(BrowserView):
 
         path = str(context.absolute_url_path()[1:])
 
-        if self.request.get('actionExist', None)=='ignore' and (path in self.existingPath):
+        if self.request.get('actionExist', None) == 'ignore' and (path in self.existingPath):
             return 'Ignoring existing content at {} \n'.format(path)
 
         # deserializing review_state
@@ -161,7 +162,8 @@ class ImportExportView(BrowserView):
 
                 # fields/keys to include
                 headers = self.request.get('exportFields', None)
-                # BUG in html checkbox input, which send value as a string if only one value have been checked
+                # BUG in html checkbox input, which
+                # send value as a string if only one value have been checked
                 if isinstance(headers, str):
                     headers = [headers]
                 headers = list(set(MUST_INCLUDED_ATTRIBUTES +
@@ -329,7 +331,8 @@ class ImportExportView(BrowserView):
 
         # get path form csv_file
         conversion = utils.Pipeline()
-        jsonList = conversion.converttojson(data=self.files.getCsv(), header=['path'])
+        jsonList = conversion.converttojson(
+            data=self.files.getCsv(), header=['path'])
 
         path_ = []
         for element in jsonList:
@@ -426,7 +429,8 @@ class ImportExportView(BrowserView):
                 include = None
 
             # convert csv to json
-            data = self.conversion.converttojson(data=self.files.getCsv(), header=include)
+            data = self.conversion.converttojson(
+                data=self.files.getCsv(), header=include)
             # invoke non-existent content,  if any
             error_log += self.createcontent(data)
 
@@ -459,7 +463,8 @@ class ImportExportView(BrowserView):
                 else:
                     error_log += 'pathError for {}\n'.format(obj_data['path'])
 
-            self.request.RESPONSE.setHeader('content-type', 'application/text; charset=utf-8')
+            self.request.RESPONSE.setHeader(
+                'content-type', 'application/text; charset=utf-8')
             return error_log
 
         else:
@@ -479,8 +484,8 @@ class ImportExportView(BrowserView):
         conversion = utils.Pipeline()
         head = conversion.getcsvheaders(data)
 
-        self.exportHeaders = filter(lambda head: head not in MUST_INCLUDED_ATTRIBUTES,
-                                    head)
+        self.exportHeaders = filter(
+            lambda head: head not in MUST_INCLUDED_ATTRIBUTES, head)
 
         return self.exportHeaders
 
@@ -541,8 +546,8 @@ class ImportExportView(BrowserView):
             # get headers from jsonData
             headers = conversion.getcsvheaders(jsonData)
 
-            headers = filter(lambda headers: headers not in MUST_INCLUDED_ATTRIBUTES,
-                             headers)
+            headers = filter(
+                lambda headers: headers not in MUST_INCLUDED_ATTRIBUTES, headers)
 
             # get matrix of headers
             matrix = self.getmatrix(headers=headers, columns=4)

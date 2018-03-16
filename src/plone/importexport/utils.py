@@ -145,7 +145,8 @@ class Pipeline(object):
                 *file_path.split(os.sep)[1:])
 
             try:
-                # REVIEW does separator for content-type here also depends on os.sep?
+                # REVIEW does separator for content-type here
+                # also depends on os.sep?
                 if data['content-type'].split(
                             '/')[0] == 'image':
                     file_data = obj.context.restrictedTraverse(
@@ -170,7 +171,8 @@ class Pipeline(object):
             file_path = path_
 
             try:
-                # REVIEW does separator for content-type here also depends on os.sep?
+                # REVIEW does separator for content-type
+                # here also depends on os.sep?
                 if data['content-type'].split(
                             '/')[1] == 'html':
                     file_data = data['data'].encode(
@@ -190,8 +192,9 @@ class Pipeline(object):
     def converttojson(self, data=None, header=None):
         if not data:
             raise ImportExportError("Provide data to jsonify")
-        ''' A major BUG here
-        The fieldnames parameter is a sequence whose elements are associated with the fields of the input data in order
+        '''A major BUG here
+        The fieldnames parameter is a sequence whose
+        elements are associated with the fields of the input data in order
         '''
         reader = csv.DictReader(data, fieldnames=None)
         data = []
@@ -235,7 +238,9 @@ class Pipeline(object):
                 self.filter_keys(data[index], excluded)
         elif isinstance(data, dict):
             for key in data.keys():
-                if data[key] == "Field NA" or data[key] == "Null" or (excluded and key in excluded):
+                if data[key] == "Field NA" \
+                        or data[key] == "Null" \
+                        or (excluded and key in excluded):
                     del data[key]
 
         return True
@@ -353,7 +358,8 @@ class fileAnalyse(object):
         self.csv_file = None
         # unzip the zip and restructure the dict
         self.reStructure()
-        # TODO if no csv_file then make one dynamically to support uploaded BLOB
+        # TODO if no csv_file then make one dynamically to
+        # support uploaded BLOB
         self.csv_file = self.findcsv()
 
     def getFiletype(self, filename=None):
@@ -378,7 +384,8 @@ class fileAnalyse(object):
                     if not self.csv_file:
                         self.csv_file = self.files[key]
                     else:
-                        raise ImportExportError('More than 1 csv file provided, require only 1 ')
+                        raise ImportExportError(
+                            'More than 1 csv file provided, require only 1')
 
         return self.csv_file
 
