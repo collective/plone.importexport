@@ -3,8 +3,6 @@
 
 """Setup tests for this package."""
 from plone.importexport.testing import PLONE_IMPORTEXPORT_INTEGRATION_TESTING  # noqa
-from plone import api
-from plone.importexport.exceptions import ImportExportError
 from plone.importexport import utils
 from plone import api
 import unittest2 as unittest
@@ -15,13 +13,14 @@ import os
 import json
 import copy
 
+
 class TestData():
 
     def __init__(self):
         # FIXME find a better way to get to the testzip location
         # test zip file
         testzip = ['..', '..', 'src', 'plone', 'importexport',
-         'tests', 'ImportExportTest.zip']
+                   'tests', 'ImportExportTest.zip']
         self.zipname = os.sep.join(testzip)
         self.zip = open(self.zipname, 'r')
         self.data = [
@@ -51,7 +50,7 @@ class TestData():
             return self.data
 
         for data in self.data:
-            if data.get('@type')==contentType:
+            if data.get('@type') == contentType:
                 return data
 
     def getFile(self, contentType=None):
@@ -68,6 +67,7 @@ class TestData():
     def getzipname(self):
         return self.zipname
 
+
 class TestImportExportView(unittest.TestCase):
     """Test importexport view methods."""
 
@@ -82,7 +82,7 @@ class TestImportExportView(unittest.TestCase):
         self.request['file'] = self.data.getzip()
         self.request['method'] = 'POST'
         self.view = getMultiAdapter((self.context, self.request),
-            name="import-export")
+                                    name="import-export")
 
     def test_template_renders(self):
         results = self.view()
@@ -124,7 +124,7 @@ class TestImportExportView(unittest.TestCase):
                     self.fail("Error in fetching Parent object")
 
                 if fnmatch.fnmatch(log, '*Error*'):
-                    self.fail("Failed deserialized log: \n %s" %log)
+                    self.fail("Failed deserialized log: \n %s" % log)
 
     def test_serialize(self):
 
@@ -136,7 +136,7 @@ class TestImportExportView(unittest.TestCase):
 
         # XXX: Validate results
         if fnmatch.fnmatch(json.dumps(results), '*Error*'):
-            self.fail("Error while serializing \n %s" %results[-1])
+            self.fail("Error while serializing \n %s" % results[-1])
         self.assertIn('@type', json.dumps(results))
 
     def test_export(self):
@@ -158,8 +158,8 @@ class TestImportExportView(unittest.TestCase):
 
         self.view.requestFile(self.data.getzip())
         # get json data to create new context
-        if (self.data.getzipname()!=self.view.files.keys()[0]) or (
-            self.data.getzip()!=self.view.files.values()[0]):
+        if (self.data.getzipname() != self.view.files.keys()[0]) or (
+                self.data.getzip() != self.view.files.values()[0]):
             self.fail()
 
     def test_import(self):
@@ -168,7 +168,7 @@ class TestImportExportView(unittest.TestCase):
             log = self.view.imports()
 
             if fnmatch.fnmatch(log, '*Error*'):
-                self.fail("Failing log for import: \n %s " %log)
+                self.fail("Failing log for import: \n %s " % log)
 
     def test_getExistingpath(self):
 
@@ -230,8 +230,6 @@ class TestImportExportView(unittest.TestCase):
             headers = [
                 'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators'
             ]
-
-
             self.assertEqual(headers, self.view.getheaders())
 
     def test_getmatrix(self):
@@ -263,6 +261,7 @@ class TestImportExportView(unittest.TestCase):
 
         self.assertEqual(testmatrix, json.loads(self.view.getImportfields()))
 
+
 class TestInMemoryZip(unittest.TestCase):
 
     def setUp(self):
@@ -293,6 +292,7 @@ class TestInMemoryZip(unittest.TestCase):
         files = self.InMemoryZip.getfiles(self.data.getzip())
         self.assertEqual(testfiles, files.keys())
 
+
 class TestfileAnalyse(unittest.TestCase):
 
     layer = PLONE_IMPORTEXPORT_INTEGRATION_TESTING
@@ -305,7 +305,7 @@ class TestfileAnalyse(unittest.TestCase):
         self.request['file'] = self.data.getzip()
         self.request['method'] = 'POST'
         self.view = getMultiAdapter((self.context, self.request),
-            name="import-export")
+                                    name="import-export")
 
         self.view.requestFile(self.data.getzip())
         self.fileAnalyse = utils.fileAnalyse(self.view.files)
@@ -328,6 +328,7 @@ class TestfileAnalyse(unittest.TestCase):
 
         self.assertEqual('csv', self.fileAnalyse.getFiletype(filename='ImportExportTest/test.csv/test.csv'))
 
+
 class Testmapping(unittest.TestCase):
 
     layer = PLONE_IMPORTEXPORT_INTEGRATION_TESTING
@@ -341,8 +342,7 @@ class Testmapping(unittest.TestCase):
         self.request['file'] = self.data.getzip()
         self.request['method'] = 'POST'
         self.view = getMultiAdapter((self.context, self.request),
-            name="import-export")
-
+                                    name="import-export")
 
     def getobjcontext(self, path):
         return self.view.getobjcontext(path)
@@ -357,8 +357,6 @@ class Testmapping(unittest.TestCase):
                 path = os.sep.join(path)
                 data['path'] = path
                 uid = data.get('UID')
-
-
                 mapping = self.mapping.mapNewUID([data])
 
                 if uid not in mapping.keys():
@@ -377,7 +375,7 @@ class Testmapping(unittest.TestCase):
 
             newUID = self.mapping.getUID(path)
 
-            if uid==newUID:
+            if uid == newUID:
                 self.fail()
 
     # TODO
@@ -391,6 +389,7 @@ class Testmapping(unittest.TestCase):
         #     if fnmatch.fnmatch(data, ('*'+uid+'*')):
         #         self.fail()
 
+
 class TestPipeline(unittest.TestCase):
 
     layer = PLONE_IMPORTEXPORT_INTEGRATION_TESTING
@@ -403,7 +402,7 @@ class TestPipeline(unittest.TestCase):
         self.request['file'] = self.data.getzip()
         self.request['method'] = 'POST'
         self.view = getMultiAdapter((self.context, self.request),
-            name="import-export")
+                                    name="import-export")
         self.zip = utils.InMemoryZip()
         self.view.requestFile(self.data.getzip())
         self.fileAnalyse = utils.fileAnalyse(self.view.files)
@@ -425,15 +424,15 @@ class TestPipeline(unittest.TestCase):
              'csv': 'plone.csvPK',
              'combined': 'plone.csvPK',
              'files': 'plone/14-ist.webm/14  IST.webmPK'}
-            data_list= self.view.serialize(self.context)[:-1]
-            csv_headers=self.pipeline.getcsvheaders(self.data.getData())
+            data_list = self.view.serialize(self.context)[:-1]
+            csv_headers = self.pipeline.getcsvheaders(self.data.getData())
 
             for formats in exportFormat.keys():
                 self.request['exportFormat'] = formats
                 self.zip = utils.InMemoryZip()
 
                 self.pipeline.convertjson(obj=self, data_list=data_list,
-                 csv_headers=csv_headers)
+                                          csv_headers=csv_headers)
 
                 # self.assertEqual(self.zip.read(), exportFormat[formats])
                 self.assertIn(exportFormat[formats], self.zip.read())
@@ -442,7 +441,7 @@ class TestPipeline(unittest.TestCase):
         with api.env.adopt_roles(['Manager']):
             log = self.view.imports()
             test_dataFormat = ['Document', 'News Item']
-            data_list= self.view.serialize(self.context)[:-1]
+            data_list = self.view.serialize(self.context)[:-1]
 
             for data in data_list:
                 tempData = copy.deepcopy(data)
@@ -451,7 +450,7 @@ class TestPipeline(unittest.TestCase):
                         if not data[key]:
                             continue
                         self.pipeline.getblob(self, data[key], data['path'])
-                        if tempData[key]!=data[key]:
+                        if tempData[key] != data[key]:
                             self.assertIn('download', data[key])
 
                     test_dataFormat.remove(data.get('@type'))
@@ -466,12 +465,12 @@ class TestPipeline(unittest.TestCase):
         self.assertEqual(testData, self.pipeline.jsonify(self.data.getData(contentType='Folder')))
 
     def test_filter_keys(self):
-        jsonList = [{'@id':'skdjf'}, {'path':'test'}, {'key':'Null'},
-            {'key':'Field NA'}, {}, {}, {}, {}, {}]
+        jsonList = [{'@id': 'skdjf'}, {'path': 'test'}, {'key': 'Null'},
+                    {'key': 'Field NA'}, {}, {}, {}, {}, {}]
 
         self.pipeline.filter_keys(jsonList, excluded=['@id'])
         self.assertEqual([{}, {'path': 'test'}, {}, {}, {}, {}, {}, {}, {}],
-         jsonList)
+                         jsonList)
         pass
 
     def test_fillblobintojson(self):
@@ -492,6 +491,6 @@ class TestPipeline(unittest.TestCase):
 
             obj_data = data[index]
             obj_data, temp_log = self.pipeline.fillblobintojson(
-            obj_data, self.files.getFiles(), self.mapping)
+                obj_data, self.files.getFiles(), self.mapping)
             if fnmatch.fnmatch(temp_log, ('*'+'Error'+'*')):
                 self.fail()

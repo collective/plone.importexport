@@ -4,24 +4,17 @@ from plone.restapi.interfaces import ISerializeToJson
 # An adapter to deserialize a JSON object into an object in Plone.
 from plone.restapi.interfaces import IDeserializeFromJson
 from Products.Five import BrowserView
-from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from zope.component import queryMultiAdapter
 from zExceptions import BadRequest
 import zope
 import UserDict
-from plone.restapi.exceptions import DeserializationError
 from zope.publisher.interfaces.browser import IBrowserRequest
 from DateTime import DateTime
 from random import randint
-from urlparse import urlparse
-import fnmatch
 from plone.importexport import utils
 import os
 from plone.importexport.exceptions import ImportExportError
 from plone import api
-from plone.api.exc import MissingParameterError
-from plone.api.exc import InvalidParameterError
-from Products.CMFPlone.resources import add_resource_on_request
 
 global MUST_EXCLUDED_ATTRIBUTES
 global MUST_INCLUDED_ATTRIBUTES
@@ -37,10 +30,11 @@ global MUST_INCLUDED_ATTRIBUTES
     excluding it from the exported data
 '''
 MUST_EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
-                       'scales', 'items_total', 'table_of_contents', 'layout']
+                            'scales', 'items_total', 'table_of_contents', 'layout']
 
 # these attributes must be included while importing
 MUST_INCLUDED_ATTRIBUTES = ['@type', 'path', 'id', 'UID']
+
 
 class ImportExportView(BrowserView):
     """Import/Export page."""
@@ -97,10 +91,10 @@ class ImportExportView(BrowserView):
                 try:
                     objData = self.serialize(member)
                     results += objData[:-1]
-                    if objData[-1]!= '':
+                    if objData[-1] != '':
                         errorLog += objData[-1]
                 except Exception as e:
-                    errorLog += str('Error: ' + repr(e) + ' for '+ str(member.absolute_url_path()[1:]) + '\n')
+                    errorLog += str('Error: ' + repr(e) + ' for ' + str(member.absolute_url_path()[1:]) + '\n')
         results.append(errorLog)
         return results
 
@@ -112,7 +106,6 @@ class ImportExportView(BrowserView):
 
         if self.request.get('actionExist', None)=='ignore' and (path in self.existingPath):
             return 'Ignoring existing content at {} \n'.format(path)
-
 
         # deserializing review_state
         new_state = None
@@ -137,13 +130,13 @@ class ImportExportView(BrowserView):
             deserializer()
             if new_state:
                 state = str(api.content.get_state(obj=context, default=None))
-                if new_state!=state:
+                if new_state != state:
                     api.content.transition(obj=context, to_state=new_state)
 
             return "Success for {} \n".format(path)
 
         except Exception as e:
-            error = str('Error: ' + repr(e) + ' for '+ path + '\n')
+            error = str('Error: ' + repr(e) + ' for ' + path + '\n')
 
         return error
 
@@ -164,7 +157,7 @@ class ImportExportView(BrowserView):
 
             exportType = self.request.get('exportFormat', None)
 
-            if self.request.get('exportFields', None) and (exportType=='csv' or exportType=='combined'):
+            if self.request.get('exportFields', None) and (exportType == 'csv' or exportType == 'combined'):
 
                 # fields/keys to include
                 headers = self.request.get('exportFields', None)
@@ -172,7 +165,7 @@ class ImportExportView(BrowserView):
                 if isinstance(headers, str):
                     headers = [headers]
                 headers = list(set(MUST_INCLUDED_ATTRIBUTES +
-                    headers))
+                                   headers))
 
             else:
                 # 'No check provided. Thus exporting whole content'
@@ -188,13 +181,11 @@ class ImportExportView(BrowserView):
             # results is a list of dicts
             objData = self.serialize(self.context)
             results = objData[:-1]
-            if objData[-1]!= '':
+            if objData[-1] != '':
                 errorLog = objData[-1]
                 self.zip.append('errorLog.txt', errorLog)
 
             self.conversion.convertjson(self, results, headers)
-
-
             self.request.RESPONSE.setHeader('content-type', 'application/zip')
             cd = 'attachment; filename=%s.zip' % (id_)
             self.request.RESPONSE.setHeader('Content-Disposition', cd)
@@ -374,7 +365,7 @@ class ImportExportView(BrowserView):
                 raise ImportExportError("Provide Good File")
             file_.seek(0)
             try:
-                filename =  file_.filename
+                filename = file_.filename
             except:
                 filename = file_.name
 
@@ -428,7 +419,7 @@ class ImportExportView(BrowserView):
                 if isinstance(include, str):
                     include = [include]
                 include = list(set(MUST_INCLUDED_ATTRIBUTES +
-                    include))
+                                   include))
 
             else:
                 # 'No check provided. Thus exporting whole content'
@@ -453,7 +444,7 @@ class ImportExportView(BrowserView):
 
                 # get blob content into json data
                 obj_data, temp_log = self.conversion.fillblobintojson(
-                obj_data, self.files.getFiles(), self.mapping)
+                    obj_data, self.files.getFiles(), self.mapping)
 
                 error_log += temp_log
 
@@ -468,8 +459,7 @@ class ImportExportView(BrowserView):
                 else:
                     error_log += 'pathError for {}\n'.format(obj_data['path'])
 
-
-            self.request.RESPONSE.setHeader('content-type','application/text; charset=utf-8')
+            self.request.RESPONSE.setHeader('content-type', 'application/text; charset=utf-8')
             return error_log
 
         else:
@@ -483,14 +473,14 @@ class ImportExportView(BrowserView):
 
         objData = self.serialize(self.context)
         data = objData[:-1]
-        if objData[-1]!= '':
+        if objData[-1] != '':
             errorLog = objData[-1]
 
         conversion = utils.Pipeline()
         head = conversion.getcsvheaders(data)
 
         self.exportHeaders = filter(lambda head: head not in MUST_INCLUDED_ATTRIBUTES,
-            head)
+                                    head)
 
         return self.exportHeaders
 
@@ -509,7 +499,7 @@ class ImportExportView(BrowserView):
         for index in range(rows):
             matrix[index] = []
             for i in range(columns):
-                if count<1:
+                if count < 1:
                     continue
                 count -= 1
                 matrix[index].append(headers[count])
@@ -552,7 +542,7 @@ class ImportExportView(BrowserView):
             headers = conversion.getcsvheaders(jsonData)
 
             headers = filter(lambda headers: headers not in MUST_INCLUDED_ATTRIBUTES,
-                headers)
+                             headers)
 
             # get matrix of headers
             matrix = self.getmatrix(headers=headers, columns=4)

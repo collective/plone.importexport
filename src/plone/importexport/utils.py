@@ -1,5 +1,4 @@
 import os
-from urlparse import urlparse
 import csv
 import StringIO
 import cStringIO
@@ -10,6 +9,7 @@ from plone.uuid.interfaces import IUUID
 from plone.importexport.exceptions import ImportExportError
 import fnmatch
 from bs4 import BeautifulSoup
+
 
 class InMemoryZip(object):
 
@@ -39,7 +39,7 @@ class InMemoryZip(object):
         return self.in_memory_zip.read()
 
     def getfiles(self, zip_file):
-        #TODO validate zip_file,files,csv_file and raise if not good file
+        # TODO validate zip_file,files,csv_file and raise if not good file
         # TODO also for csv check MUST_INCLUDED_ATTRIBUTES
         if not zip_file:
             raise ImportExportError('No file Provided')
@@ -120,23 +120,19 @@ class Pipeline(object):
                         data[key] = "Null"
                         continue
 
-                    if exportType=="files" or exportType=="combined":
+                    if exportType == "files" or exportType == "combined":
                         data[key] = self.getblob(obj, data[key], data['path'])
 
                         # converting list and dict to quoted json
                         data[key] = json.dumps(data[key])
-
-
                 writer.writerow(data)
         except IOError as (errno, strerror):
                 print("I/O error({0}): {1}".format(errno, strerror))
         else:
-            if exportType=="csv" or exportType=="combined":
+            if exportType == "csv" or exportType == "combined":
                 obj.zip.append(id_+'.csv', csv_output.getvalue())
 
         csv_output.close()
-
-
         return
 
     def getblob(self, obj, data, path_):
@@ -300,6 +296,7 @@ class Pipeline(object):
 
         return obj_data, error_log
 
+
 class mapping(object):
 
     def __init__(self, obj):
@@ -340,11 +337,11 @@ class mapping(object):
 
             linktype = link.get('data-linktype')
 
-            if linktype=='internal':
+            if linktype == 'internal':
                 oldUid = link.get('data-val')
                 if self.mapping.get(oldUid):
                         link['href'] = 'resolveuid/' + str(self.mapping[oldUid])
-                        link['data-val']= self.mapping[oldUid]
+                        link['data-val'] = self.mapping[oldUid]
         return str(soup)
 
 
@@ -373,13 +370,13 @@ class fileAnalyse(object):
     '''
     def findcsv(self):
         # the zip may also have csv content of site
-        ignore = str('*'+ os.sep + '*')
+        ignore = str('*' + os.sep + '*')
         for key in self.files.keys():
             if fnmatch.fnmatch(key, ignore):
                 pass
             elif fnmatch.fnmatch(key, '*.csv'):
                     if not self.csv_file:
-                        self.csv_file  = self.files[key]
+                        self.csv_file = self.files[key]
                     else:
                         raise ImportExportError('More than 1 csv file provided, require only 1 ')
 
@@ -394,8 +391,8 @@ class fileAnalyse(object):
         tempFiles = {}
         for k in self.files.keys():
             type_ = self.getFiletype(k)
-            if type_=='zip':
-                zip_file =  self.files[k]
+            if type_ == 'zip':
+                zip_file = self.files[k]
                 tempzip = InMemoryZip()
                 zip_file = tempzip.getfiles(zip_file)
                 for filename in zip_file.keys():
