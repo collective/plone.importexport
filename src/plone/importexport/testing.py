@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import plone.importexport
+
 from plone.app.contenttypes.testing import PLONE_APP_CONTENTTYPES_FIXTURE
 from plone.app.robotframework.testing import REMOTE_LIBRARY_BUNDLE_FIXTURE
 from plone.app.testing import applyProfile
@@ -7,8 +9,6 @@ from plone.app.testing import IntegrationTesting
 from plone.app.testing import PloneSandboxLayer
 from plone.testing import z2
 from zope.configuration import xmlconfig
-
-import plone.importexport
 
 
 class PloneImportexportLayer(PloneSandboxLayer):

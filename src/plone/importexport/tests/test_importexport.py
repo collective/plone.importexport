@@ -2,16 +2,17 @@
 # ./bin/test -s plone.importexport -t test_importexport
 
 """Setup tests for this package."""
-from plone.importexport.testing import PLONE_IMPORTEXPORT_INTEGRATION_TESTING  # noqa
-from plone.importexport import utils
-from plone import api
-import unittest2 as unittest
-from zope.component import getMultiAdapter
-from cStringIO import StringIO
+import copy
 import fnmatch
 import os
 import json
-import copy
+import unittest2 as unittest
+
+from cStringIO import StringIO
+from plone import api
+from plone.importexport.testing import PLONE_IMPORTEXPORT_INTEGRATION_TESTING  # noqa
+from plone.importexport import utils
+from zope.component import getMultiAdapter
 
 
 class TestData():

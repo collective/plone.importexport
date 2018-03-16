@@ -1,14 +1,15 @@
 import os
 import csv
-import StringIO
 import cStringIO
-import zipfile
-import operator
+import fnmatch
 import json
+import operator
+import StringIO
+import zipfile
+
+from bs4 import BeautifulSoup
 from plone.uuid.interfaces import IUUID
 from plone.importexport.exceptions import ImportExportError
-import fnmatch
-from bs4 import BeautifulSoup
 
 
 class InMemoryZip(object):

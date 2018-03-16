@@ -1,20 +1,21 @@
 import json
-# An Adapter to serialize a Dexterity object into a JSON object.
+import os
+import UserDict
+import zope
+
+from DateTime import DateTime
+from plone import api
+from plone.importexport import utils
+from plone.importexport.exceptions import ImportExportError
 from plone.restapi.interfaces import ISerializeToJson
 # An adapter to deserialize a JSON object into an object in Plone.
 from plone.restapi.interfaces import IDeserializeFromJson
 from Products.Five import BrowserView
+from random import randint
 from zope.component import queryMultiAdapter
 from zExceptions import BadRequest
-import zope
-import UserDict
 from zope.publisher.interfaces.browser import IBrowserRequest
-from DateTime import DateTime
-from random import randint
-from plone.importexport import utils
-import os
-from plone.importexport.exceptions import ImportExportError
-from plone import api
+
 
 global MUST_EXCLUDED_ATTRIBUTES
 global MUST_INCLUDED_ATTRIBUTES
