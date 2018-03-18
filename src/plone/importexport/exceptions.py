@@ -1,4 +1,7 @@
-# A class to catch error and exceptions
+# -*- coding: utf-8 -*-
+#  A class to catch error and exceptions
+
+
 class ImportExportError(Exception):
 
     def __init__(self, message):

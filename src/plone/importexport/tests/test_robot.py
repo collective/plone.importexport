@@ -1,11 +1,11 @@
 # -*- coding: UTF-8 -*-
+from plone.app.testing import ROBOT_TEST_LEVEL
+from plone.importexport.testing import PLONE_IMPORTEXPORT_ACCEPTANCE_TESTING  # noqa
+from plone.testing import layered
+
 import os
 import robotsuite
 import unittest
-
-from plone.importexport.testing import PLONE_IMPORTEXPORT_ACCEPTANCE_TESTING  # noqa
-from plone.app.testing import ROBOT_TEST_LEVEL
-from plone.testing import layered
 
 
 def test_suite():
@@ -22,7 +22,7 @@ def test_suite():
         suite.addTests([
             layered(
                 robottestsuite,
-                layer=PLONE_IMPORTEXPORT_ACCEPTANCE_TESTING
+                layer=PLONE_IMPORTEXPORT_ACCEPTANCE_TESTING,
             ),
         ])
     return suite

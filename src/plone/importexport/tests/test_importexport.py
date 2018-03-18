@@ -2,17 +2,17 @@
 # ./bin/test -s plone.importexport -t test_importexport
 
 """Setup tests for this package."""
-import copy
-import fnmatch
-import os
-import json
-import unittest2 as unittest
-
 from cStringIO import StringIO
 from plone import api
-from plone.importexport.testing import PLONE_IMPORTEXPORT_INTEGRATION_TESTING  # noqa
 from plone.importexport import utils
+from plone.importexport.testing import PLONE_IMPORTEXPORT_INTEGRATION_TESTING  # noqa
 from zope.component import getMultiAdapter
+
+import copy
+import fnmatch
+import json
+import os
+import unittest2 as unittest
 
 
 class TestData():
@@ -34,7 +34,7 @@ class TestData():
             {'version': u'current', 'id': u'deadline-for-talk-submission', 'UID': u'21e88159f0024ba58f653f2157b9e0f5', 'title': u'Deadline for talk submission', 'start': u'2017-08-25T12:00:00+05:30', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'private', 'path': u'ImportExportTest/events/deadline-for-talk-submission', 'end': u'2017-08-25T13:00:00+05:30', 'created': u'2017-08-25T12:01:37+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Event'},
             {'version': u'current', 'id': u'Members', 'UID': u'009c66b78c3640f1b3ad645c18f18584', 'title': u'Users', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'description': u'Site Users', 'path': u'ImportExportTest/Members', 'language': u'en-us', 'created': u'2017-08-25T12:00:52+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Folder'},
             {'version': u'current', 'image': {u'filename': u'635861-game-wallpaper.jpg', u'width': 1366, u'download': u'ImportExportTest/Members/635861-game-wallpaper.jpg/635861-game-wallpaper.jpg', u'height': 768, u'content-type': u'image/jpeg', u'size': 86670}, 'id': u'635861-game-wallpaper.jpg', 'UID': u'67f78683343443da9306e053014fc101', 'title': u'new image', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'description': u'this is the image', 'path': u'ImportExportTest/Members/635861-game-wallpaper.jpg', 'language': u'en-us', 'created': u'2017-08-25T12:01:37+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Image'},
-            {'version': u'current', 'file': {u'download': u'ImportExportTest/14-ist.webm/14  IST.webm', u'size': 15665887, u'content-type': u'video/webm', u'filename': u'14  IST.webm'}, 'id': u'14-ist.webm', 'UID': u'0390cf2db80642c6be65b45c7935643c', 'title': u'14  IST.webm', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'path': u'ImportExportTest/14-ist.webm', 'language': u'en-us', 'created': u'2017-08-25T12:01:37+05:30', 'modified': u'2017-08-25T12:01:38+05:30', 'creators': [u'admin'], '@type': u'File'}
+            {'version': u'current', 'file': {u'download': u'ImportExportTest/14-ist.webm/14  IST.webm', u'size': 15665887, u'content-type': u'video/webm', u'filename': u'14  IST.webm'}, 'id': u'14-ist.webm', 'UID': u'0390cf2db80642c6be65b45c7935643c', 'title': u'14  IST.webm', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'path': u'ImportExportTest/14-ist.webm', 'language': u'en-us', 'created': u'2017-08-25T12:01:37+05:30', 'modified': u'2017-08-25T12:01:38+05:30', 'creators': [u'admin'], '@type': u'File'},
         ]
 
     def getType(self):
@@ -83,13 +83,13 @@ class TestImportExportView(unittest.TestCase):
         self.request['file'] = self.data.getzip()
         self.request['method'] = 'POST'
         self.view = getMultiAdapter((self.context, self.request),
-                                    name="import-export")
+                                    name='import-export')
 
     def test_template_renders(self):
         results = self.view()
         # XXX: Check some string from this template
         self.assertIn(
-            "Select a CSV or a ZIP file providing the contents to import.",
+            'Select a CSV or a ZIP file providing the contents to import.',
             results)
 
     def test_exclude_attributes(self):
@@ -103,7 +103,8 @@ class TestImportExportView(unittest.TestCase):
         for key in excluded_attributes:
             # XXX: asertNotIn not present
             if key in data.keys():
-                self.fail("%s key should not be present" % key)
+                self.fail('{arg} key should not be present'.format(
+                    arg=str(key)))
 
     def test_createcontent(self):
 
@@ -111,10 +112,10 @@ class TestImportExportView(unittest.TestCase):
             log = self.view.createcontent(self.data.getData())
 
         if fnmatch.fnmatch(log, '*Error*'):
-            self.fail("Failed in creating content")
+            self.fail('Failed in creating content')
 
-    '''deserialize funciton of plone.importexport module  is highly coupled and
-     thus unit case is too complex for this'''
+    # deserialize funciton of plone.importexport module  is highly coupled and
+    #  thus unit case is too complex for this
     def test_deserialize(self):
 
         with api.env.adopt_roles(['Manager']):
@@ -124,10 +125,11 @@ class TestImportExportView(unittest.TestCase):
                 if obj:
                     log = self.view.deserialize(obj, data)
                 else:
-                    self.fail("Error in fetching Parent object")
+                    self.fail('Error in fetching Parent object')
 
                 if fnmatch.fnmatch(log, '*Error*'):
-                    self.fail("Failed deserialized log: \n %s" % log)
+                    self.fail('Failed deserialized log: \n {arg}'.format(
+                        arg=str(log)))
 
     def test_serialize(self):
 
@@ -140,7 +142,8 @@ class TestImportExportView(unittest.TestCase):
 
         # XXX: Validate results
         if fnmatch.fnmatch(json.dumps(results), '*Error*'):
-            self.fail("Error while serializing \n %s" % results[-1])
+            self.fail('Error while serializing \n {arg}'.format(
+                arg=str(results[-1])))
         self.assertIn('@type', json.dumps(results))
 
     def test_export(self):
@@ -172,14 +175,15 @@ class TestImportExportView(unittest.TestCase):
             log = self.view.imports()
 
             if fnmatch.fnmatch(log, '*Error*'):
-                self.fail("Failing log for import: \n %s " % log)
+                self.fail('Failing log for import: \n {arg} '.format(
+                    arg=str(log)))
 
     def test_getExistingpath(self):
 
         with api.env.adopt_roles(['Manager']):
 
             # create path
-            data = [self.data.getData(contentType="Folder")]
+            data = [self.data.getData(contentType='Folder')]
             self.view.createcontent(data)
 
             query = os.sep.join(data[0]['path'].split('/')[1:])
@@ -190,7 +194,7 @@ class TestImportExportView(unittest.TestCase):
         with api.env.adopt_roles(['Manager']):
 
             # create path
-            data = [self.data.getData(contentType="Folder")]
+            data = [self.data.getData(contentType='Folder')]
             self.view.createcontent(data)
 
             query = data[0]['path'].split('/')[1:]
@@ -203,7 +207,7 @@ class TestImportExportView(unittest.TestCase):
         with api.env.adopt_roles(['Manager']):
 
             # create path
-            data = [self.data.getData(contentType="Folder")]
+            data = [self.data.getData(contentType='Folder')]
             self.view.createcontent(data)
 
             query = data[0]['path'].split('/')[1:]
@@ -215,7 +219,7 @@ class TestImportExportView(unittest.TestCase):
         with api.env.adopt_roles(['Manager']):
 
             # create path
-            data = [self.data.getData(contentType="Folder")]
+            data = [self.data.getData(contentType='Folder')]
             self.view.createcontent(data)
 
             query = data[0]['path'].split('/')[1:]
@@ -229,18 +233,18 @@ class TestImportExportView(unittest.TestCase):
         with api.env.adopt_roles(['Manager']):
 
             # create path
-            data = [self.data.getData(contentType="Folder")]
+            data = [self.data.getData(contentType='Folder')]
             self.view.createcontent(data)
 
             headers = [
-                'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators'
+                'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators',
             ]
             self.assertEqual(headers, self.view.getheaders())
 
     def test_getmatrix(self):
 
             headers = [
-                'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators'
+                'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators',
             ]
 
             testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'effective', u'language', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', u'title', u'subjects', u'exclude_from_nav'], 4: [u'contributors', 'version']}
@@ -253,7 +257,7 @@ class TestImportExportView(unittest.TestCase):
         with api.env.adopt_roles(['Manager']):
 
             # create content
-            data = [self.data.getData(contentType="Folder")]
+            data = [self.data.getData(contentType='Folder')]
             self.view.createcontent(data)
 
             testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'effective', u'language', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', u'title', u'subjects', u'exclude_from_nav'], 4: [u'contributors', 'version']}
@@ -291,7 +295,7 @@ class TestInMemoryZip(unittest.TestCase):
     def test_getfiles(self):
 
         testfiles = [
-            'ImportExportTest/', 'test_folder/test.jpg', 'ImportExportTest/14-ist.webm/14  IST.webm', 'ImportExportTest/14-ist.webm/', 'ImportExportTest/news/aggregator/aggregator.html', 'ImportExportTest/news/conference-website-online/58963_10200248622793289_1140334088_n.jpg', 'ImportExportTest/front-page/front-page.html', 'ImportExportTest.csv', 'test_folder/', 'ImportExportTest/Members/635861-game-wallpaper.jpg/', 'ImportExportTest/test.csv/test.csv', 'ImportExportTest/Members/', 'ImportExportTest/front-page/', 'ImportExportTest/test.csv/', 'test.html', 'ImportExportTest/news/conference-website-online/', 'ImportExportTest/news/aggregator/', 'ImportExportTest/news/', 'ImportExportTest/Members/635861-game-wallpaper.jpg/635861-game-wallpaper.jpg'
+            'ImportExportTest/', 'test_folder/test.jpg', 'ImportExportTest/14-ist.webm/14  IST.webm', 'ImportExportTest/14-ist.webm/', 'ImportExportTest/news/aggregator/aggregator.html', 'ImportExportTest/news/conference-website-online/58963_10200248622793289_1140334088_n.jpg', 'ImportExportTest/front-page/front-page.html', 'ImportExportTest.csv', 'test_folder/', 'ImportExportTest/Members/635861-game-wallpaper.jpg/', 'ImportExportTest/test.csv/test.csv', 'ImportExportTest/Members/', 'ImportExportTest/front-page/', 'ImportExportTest/test.csv/', 'test.html', 'ImportExportTest/news/conference-website-online/', 'ImportExportTest/news/aggregator/', 'ImportExportTest/news/', 'ImportExportTest/Members/635861-game-wallpaper.jpg/635861-game-wallpaper.jpg',
         ]
 
         files = self.InMemoryZip.getfiles(self.data.getzip())
@@ -310,7 +314,7 @@ class TestfileAnalyse(unittest.TestCase):
         self.request['file'] = self.data.getzip()
         self.request['method'] = 'POST'
         self.view = getMultiAdapter((self.context, self.request),
-                                    name="import-export")
+                                    name='import-export')
 
         self.view.requestFile(self.data.getzip())
         self.fileAnalyse = utils.fileAnalyse(self.view.files)
@@ -348,7 +352,7 @@ class Testmapping(unittest.TestCase):
         self.request['file'] = self.data.getzip()
         self.request['method'] = 'POST'
         self.view = getMultiAdapter((self.context, self.request),
-                                    name="import-export")
+                                    name='import-export')
 
     def getobjcontext(self, path):
         return self.view.getobjcontext(path)
@@ -370,7 +374,7 @@ class Testmapping(unittest.TestCase):
 
     def test_getUID(self):
 
-        data = [self.data.getData(contentType="Folder")]
+        data = [self.data.getData(contentType='Folder')]
 
         with api.env.adopt_roles(['Manager']):
             log = self.view.createcontent(data)
@@ -408,7 +412,7 @@ class TestPipeline(unittest.TestCase):
         self.request['file'] = self.data.getzip()
         self.request['method'] = 'POST'
         self.view = getMultiAdapter((self.context, self.request),
-                                    name="import-export")
+                                    name='import-export')
         self.zip = utils.InMemoryZip()
         self.view.requestFile(self.data.getzip())
         self.fileAnalyse = utils.fileAnalyse(self.view.files)
@@ -418,7 +422,7 @@ class TestPipeline(unittest.TestCase):
     def test_getcsvheaders(self):
 
         testData = [
-            'id', 'UID', 'title', 'version', '@components', 'path', 'created', 'modified', 'creators', '@type', 'language', 'review_state', 'description', 'rights', 'text', 'image', 'query', 'sort_on', 'item_count', 'sort_reversed', 'effective', 'customViewFields', 'limit', 'file', 'end', 'start', 'expires', 'relatedItems'
+            'id', 'UID', 'title', 'version', '@components', 'path', 'created', 'modified', 'creators', '@type', 'language', 'review_state', 'description', 'rights', 'text', 'image', 'query', 'sort_on', 'item_count', 'sort_reversed', 'effective', 'customViewFields', 'limit', 'file', 'end', 'start', 'expires', 'relatedItems',
         ]
         self.assertEqual(testData, self.pipeline.getcsvheaders(
             self.data.getData()))
@@ -428,9 +432,9 @@ class TestPipeline(unittest.TestCase):
         with api.env.adopt_roles(['Manager']):
             log = self.view.imports()
             exportFormat = {
-             'csv': 'plone.csvPK',
-             'combined': 'plone.csvPK',
-             'files': 'plone/14-ist.webm/14  IST.webmPK'}
+                'csv': 'plone.csvPK',
+                'combined': 'plone.csvPK',
+                'files': 'plone/14-ist.webm/14  IST.webmPK'}
             data_list = self.view.serialize(self.context)[:-1]
             csv_headers = self.pipeline.getcsvheaders(self.data.getData())
 
@@ -501,5 +505,5 @@ class TestPipeline(unittest.TestCase):
             obj_data = data[index]
             obj_data, temp_log = self.pipeline.fillblobintojson(
                 obj_data, self.files.getFiles(), self.mapping)
-            if fnmatch.fnmatch(temp_log, ('*'+'Error'+'*')):
+            if fnmatch.fnmatch(temp_log, ('*' + 'Error' + '*')):
                 self.fail()
