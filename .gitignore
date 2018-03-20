@@ -18,3 +18,4 @@ src/plone/importexport/browser/dump/*
 *.pyc
 var/*
 .Python
+.ropeproject/
