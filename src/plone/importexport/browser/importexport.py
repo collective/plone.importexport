@@ -113,7 +113,7 @@ class ImportExportView(BrowserView):
 
         path = str(context.absolute_url_path()[1:])
 
-        if self.request.get('actionExist', None) == 'ignore' and (path in self.existingPath):
+        if self.request.get('actionExist', None) == 'ignore' and (path in self.existingPath):  # NOQA: E501
             return 'Ignoring existing content at {arg} \n'.format(arg=path)
 
         # deserializing review_state
@@ -166,7 +166,7 @@ class ImportExportView(BrowserView):
 
             exportType = self.request.get('exportFormat', None)
 
-            if self.request.get('exportFields', None) and (exportType == 'csv' or exportType == 'combined'):
+            if self.request.get('exportFields', None) and (exportType == 'csv' or exportType == 'combined'):  # NOQA: E501
 
                 # fields/keys to include
                 headers = self.request.get('exportFields', None)
