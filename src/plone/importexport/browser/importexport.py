@@ -30,9 +30,17 @@ global MUST_INCLUDED_ATTRIBUTES
 # these attributes must be excluded while exporting
 # BUG: plone.restapi doesn't support desearlization of layouts, thus
 #     excluding it from the exported data
-MUST_EXCLUDED_ATTRIBUTES = ['member', 'parent', 'items', 'changeNote', '@id',
-                            'scales', 'items_total', 'table_of_contents',
-                            'layout']
+MUST_EXCLUDED_ATTRIBUTES = [
+    'member',
+    'parent',
+    'items',
+    'changeNote',
+    '@id',
+    'scales',
+    'items_total',
+    'table_of_contents',
+    'layout',
+]
 
 # these attributes must be included while importing
 MUST_INCLUDED_ATTRIBUTES = ['@type', 'path', 'id', 'UID']
@@ -351,7 +359,7 @@ class ImportExportView(BrowserView):
         for element in path[1:]:
             try:
                 obj = obj[element]
-            except:
+            except Exception:
                 return None
 
         return obj
@@ -369,7 +377,7 @@ class ImportExportView(BrowserView):
             file_.seek(0)
             try:
                 filename = file_.filename
-            except:
+            except Exception:
                 filename = file_.name
 
             self.files[filename] = file_

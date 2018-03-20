@@ -7,10 +7,14 @@ import cStringIO
 import csv
 import fnmatch
 import json
+import logging
 import operator
 import os
 import StringIO
 import zipfile
+
+
+log = logging.getLogger()
 
 
 class InMemoryZip(object):
@@ -73,9 +77,8 @@ class InMemoryZip(object):
 
 class Pipeline(object):
 
-    # return unique keys from list
     def getcsvheaders(self, data=None):
-
+        """Return unique keys drom list."""
         header = {}
         for dict_ in data:
             for key in dict_.keys():
@@ -91,8 +94,8 @@ class Pipeline(object):
             result.append(key[0])
         return result
 
-    # converts json list to into zip of csv and BLOB
     def convertjson(self, obj, data_list, csv_headers):
+        """Convert json list to into zip of csv and BLOB."""
         csv_output = cStringIO.StringIO()
 
         id_ = obj.context.absolute_url_path()[1:]
@@ -129,7 +132,7 @@ class Pipeline(object):
                         data[key] = json.dumps(data[key])
                 writer.writerow(data)
         except IOError as (errno, strerror):
-                print('I/O error({0}): {1}'.format(errno, strerror))
+                log.error('I/O error(%s): %s', errno, strerror)
         else:
             if exportType == 'csv' or exportType == 'combined':
                 obj.zip.append(id_ + '.csv', csv_output.getvalue())
@@ -155,8 +158,9 @@ class Pipeline(object):
                 else:
                     file_data = obj.context.restrictedTraverse(
                         str(relative_filepath) + os.sep + 'file').data
-            except:
-                print 'Blob data fetching error'
+            except Exception as e:
+                log.error('Blob data fetching error')
+                log.error(e.message)
             else:
                 filename = data['filename']
                 data['download'] = os.path.join(
@@ -177,8 +181,9 @@ class Pipeline(object):
                 if data['content-type'].split('/')[1] == 'html':
                     file_data = data['data'].encode(data['encoding'])
                     del data['data']
-            except:
-                print 'html data fetching error'
+            except Exception as e:
+                log.error('html data fetching error')
+                log.error(e.message)
             else:
                 filename = file_path.split(os.sep)[-1] + '.html'
                 data['download'] = os.path.join(file_path, filename)
@@ -189,10 +194,9 @@ class Pipeline(object):
     def converttojson(self, data=None, header=None):
         if not data:
             raise ImportExportError('Provide data to jsonify')
-        """A major BUG here
-        The fieldnames parameter is a sequence whose
-        elements are associated with the fields of the input data in order
-        """
+        # A major BUG here
+        # The fieldnames parameter is a sequence whose
+        # elements are associated with the fields of the input data in order
         reader = csv.DictReader(data, fieldnames=None)
         data = []
         for row in reader:
@@ -213,8 +217,8 @@ class Pipeline(object):
         self.filter_keys(data)
         return data
 
-    # jsonify quoted json values
     def jsonify(self, data):
+        """Jsonfy quoted json values."""
         if isinstance(data, dict):
             for key in data.keys():
                 data[key] = self.jsonify(data[key])
@@ -224,7 +228,7 @@ class Pipeline(object):
         try:
             data = json.loads(data)
         # TODO raise the error into log_file
-        except:
+        except Exception:
             pass
         finally:
             return data
@@ -242,7 +246,7 @@ class Pipeline(object):
 
         return True
 
-    def fillblobintojson(self, obj_data, files, UIDmapping):
+    def fillblobintojson(self, obj_data, files, UIDmapping):  # NOQA: C901
 
         self.mapping = UIDmapping
         error_log = ''
@@ -256,7 +260,7 @@ class Pipeline(object):
                     content = files[value].read()
                     obj_data['image']['data'] = content.encode('ase64')
                     obj_data['image']['encoding'] = 'base64'
-                except:
+                except Exception:
                     error_log += ("""Error in fetching/encoding blob
                     from zip {arg}""".format(arg=obj_data['path']))
 
@@ -267,7 +271,7 @@ class Pipeline(object):
                     content = files[value].read()
                     obj_data['file']['data'] = content.encode('base64')
                     obj_data['file']['encoding'] = 'base64'
-                except:
+                except Exception:
                     error_log += ("""Error in fetching/encoding blob
                     from zip {arg}""".format(arg=obj_data['path']))
 
@@ -291,7 +295,7 @@ class Pipeline(object):
                     obj_data['text']['data'] = file_data
 
                     del obj_data['text']['download']
-                except:
+                except Exception:
                     error_log += ("""Error in fetching/encoding blob
                     from zip {arg}""".format(arg=obj_data['path']))
 
