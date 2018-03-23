@@ -5,7 +5,7 @@
 from cStringIO import StringIO
 from plone import api
 from plone.importexport import utils
-from plone.importexport.testing import PLONE_IMPORTEXPORT_INTEGRATION_TESTING  # noqa
+from plone.importexport.testing import PLONE_IMPORTEXPORT_INTEGRATION_TESTING
 from zope.component import getMultiAdapter
 
 import copy
@@ -15,10 +15,13 @@ import os
 import unittest
 
 
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
+
 class TestData():
 
     def __init__(self):
-        self.zip = open('ImportExportTest.zip', 'r')
+        self.zip = open(os.path.join(dir_path, 'ImportExportTest.zip'), 'r')
         self.data = [
             {'version': u'current', 'text': {u'download': u'ImportExportTest/front-page/front-page.html', u'content-type': u'text/html', u'encoding': u'utf-8'}, 'id': u'front-page', 'UID': u'cfe123705f34495995c655fa08589066', 'title': u'Plone Conference 2017, Barcelona', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'description': u'Congratulations! You have successfully installed Plone.', 'expires': u'2017-06-16T23:40:00', 'path': u'ImportExportTest/front-page', 'language': u'en-us', 'effective': u'2017-06-16T23:40:00', 'rights': u'private', 'created': u'2017-08-25T12:00:51+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Document'},  # NOQA: E501
             {'version': u'current', 'id': u'news', 'UID': u'df4d14681e0f4dd6bba272f3f588b3c3', 'title': u'News', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'description': u'Site News', 'path': u'ImportExportTest/news', 'language': u'en-us', 'effective': u'2017-08-04T13:11:00', 'rights': u'published', 'created': u'2017-08-25T12:00:51+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Folder'},  # NOQA: E501
@@ -435,7 +438,34 @@ class TestPipeline(unittest.TestCase):
     def test_getcsvheaders(self):
 
         testData = [
-            'id', 'UID', 'title', 'version', '@components', 'path', 'created', 'modified', 'creators', '@type', 'language', 'review_state', 'description', 'rights', 'text', 'image', 'query', 'sort_on', 'item_count', 'sort_reversed', 'effective', 'customViewFields', 'limit', 'file', 'end', 'start', 'expires', 'relatedItems',  # NOQA: E501
+            'id',
+            'UID',
+            'title',
+            'version',
+            '@components',
+            'path',
+            'created',
+            'modified',
+            'creators',
+            '@type',
+            'language',
+            'review_state',
+            'description',
+            'rights',
+            'text',
+            'image',
+            'query',
+            'sort_on',
+            'item_count',
+            'sort_reversed',
+            'effective',
+            'customViewFields',
+            'limit',
+            'file',
+            'end',
+            'start',
+            'expires',
+            'relatedItems',
         ]
         self.assertEqual(testData, self.pipeline.getcsvheaders(
             self.data.getData()))
@@ -486,18 +516,58 @@ class TestPipeline(unittest.TestCase):
             data=csvData, header='fieldB'))
 
     def test_jsonify(self):
-        testData = {'description': u'Site News', 'effective': u'2017-08-04T13:11:00', 'path': u'ImportExportTest/news', 'id': u'news', 'UID': u'df4d14681e0f4dd6bba272f3f588b3c3', 'language': u'en-us', 'rights': u'published', 'title': u'News', 'modified': u'2017-08-25T12:01:37+05:30', 'created': u'2017-08-25T12:00:51+05:30', 'version': u'current', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'creators': [u'admin'], '@type': u'Folder'}  # NOQA: E501
-        self.assertEqual(testData, self.pipeline.jsonify(
-            self.data.getData(contentType='Folder')))
+        testData = {
+            'description': u'Site News',
+            'effective': u'2017-08-04T13:11:00',
+            'path': u'ImportExportTest/news',
+            'id': u'news',
+            'UID': u'df4d14681e0f4dd6bba272f3f588b3c3',
+            'language': u'en-us',
+            'rights': u'published',
+            'title': u'News',
+            'modified': u'2017-08-25T12:01:37+05:30',
+            'created': u'2017-08-25T12:00:51+05:30',
+            'version': u'current',
+            '@components': {u'breadcrumbs': {},
+            u'navigation': {},
+            u'workflow': {}},
+            'review_state': u'published',
+            'creators': [u'admin'],
+            '@type': u'Folder',
+        }
+        self.assertEqual(
+            testData,
+            self.pipeline.jsonify(self.data.getData(contentType='Folder')),
+        )
 
     def test_filter_keys(self):
-        jsonList = [{'@id': 'skdjf'}, {'path': 'test'}, {'key': 'Null'},
-                    {'key': 'Field NA'}, {}, {}, {}, {}, {}]
+        jsonList = [
+            {'@id': 'skdjf'},
+            {'path': 'test'},
+            {'key': 'Null'},
+            {'key': 'Field NA'},
+            {},
+            {},
+            {},
+            {},
+            {},
+        ]
 
         self.pipeline.filter_keys(jsonList, excluded=['@id'])
-        self.assertEqual([{}, {'path': 'test'}, {}, {}, {}, {}, {}, {}, {}],
-                         jsonList)
-        pass
+        self.assertEqual(
+            [
+                {},
+                {'path': 'test'},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {},
+                {}
+            ],
+            jsonList
+        )
 
     def test_fillblobintojson(self):
         # request files
@@ -517,6 +587,9 @@ class TestPipeline(unittest.TestCase):
 
             obj_data = data[index]
             obj_data, temp_log = self.pipeline.fillblobintojson(
-                obj_data, self.files.getFiles(), self.mapping)
+                obj_data,
+                self.files.getFiles(),
+                self.mapping,
+            )
             if fnmatch.fnmatch(temp_log, ('*' + 'Error' + '*')):
                 self.fail()

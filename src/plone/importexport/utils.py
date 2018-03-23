@@ -32,7 +32,8 @@ class InMemoryZip(object):
             self.in_memory_zip,
             'a',
             zipfile.ZIP_DEFLATED,
-            False)
+            False,
+        )
 
         # Write the file to the in-memory zip
         zf.writestr(filename_in_zip, file_contents)
@@ -117,9 +118,13 @@ class Pipeline(object):
             what action to take. If it is set to 'raise' a ValueError is
             raised. If it is set to 'ignore', extra values in the dictionary
             are ignored."""
-            writer = csv.DictWriter(csv_output, fieldnames=csv_headers,
-                                    restval='Field NA', extrasaction='ignore',
-                                    dialect='excel')
+            writer = csv.DictWriter(
+                csv_output,
+                fieldnames=csv_headers,
+                restval='Field NA',
+                extrasaction='ignore',
+                dialect='excel',
+            )
             writer.writeheader()
 
             for data in data_list:
@@ -145,9 +150,7 @@ class Pipeline(object):
 
     def getblob(self, obj, data, path_):
         # store blob content and replace url with path
-        if (isinstance(data, dict) and
-                data.get('download', None)):
-
+        if (isinstance(data, dict) and data.get('download', None)):
             file_path = path_
             relative_filepath = os.path.join(
                 *file_path.split(os.sep)[1:])
@@ -173,9 +176,7 @@ class Pipeline(object):
 
         # '''store html files and replace key[data] with
         #     key[download], value= path in zip'''
-        elif (isinstance(data, dict) and
-                data.get('data', None)):
-
+        elif (isinstance(data, dict) and data.get('data', None)):
             file_path = path_
 
             try:
