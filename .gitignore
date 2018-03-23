@@ -19,3 +19,9 @@ src/plone/importexport/browser/dump/*
 var/*
 .Python
 .ropeproject/
+.tox/
+.python-version
+.coverage
+coverage.xml
+htmlcov/
+reports/
