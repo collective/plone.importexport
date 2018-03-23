@@ -12,18 +12,13 @@ import copy
 import fnmatch
 import json
 import os
-import unittest2 as unittest
+import unittest
 
 
 class TestData():
 
     def __init__(self):
-        # FIXME find a better way to get to the testzip location
-        # test zip file
-        testzip = ['..', '..', 'src', 'plone', 'importexport',
-                   'tests', 'ImportExportTest.zip']
-        self.zipname = os.sep.join(testzip)
-        self.zip = open(self.zipname, 'r')
+        self.zip = open('ImportExportTest.zip', 'r')
         self.data = [
             {'version': u'current', 'text': {u'download': u'ImportExportTest/front-page/front-page.html', u'content-type': u'text/html', u'encoding': u'utf-8'}, 'id': u'front-page', 'UID': u'cfe123705f34495995c655fa08589066', 'title': u'Plone Conference 2017, Barcelona', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'description': u'Congratulations! You have successfully installed Plone.', 'expires': u'2017-06-16T23:40:00', 'path': u'ImportExportTest/front-page', 'language': u'en-us', 'effective': u'2017-06-16T23:40:00', 'rights': u'private', 'created': u'2017-08-25T12:00:51+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Document'},  # NOQA: E501
             {'version': u'current', 'id': u'news', 'UID': u'df4d14681e0f4dd6bba272f3f588b3c3', 'title': u'News', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'description': u'Site News', 'path': u'ImportExportTest/news', 'language': u'en-us', 'effective': u'2017-08-04T13:11:00', 'rights': u'published', 'created': u'2017-08-25T12:00:51+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Folder'},  # NOQA: E501
@@ -295,7 +290,25 @@ class TestInMemoryZip(unittest.TestCase):
     def test_getfiles(self):
 
         testfiles = [
-            'ImportExportTest/', 'test_folder/test.jpg', 'ImportExportTest/14-ist.webm/14  IST.webm', 'ImportExportTest/14-ist.webm/', 'ImportExportTest/news/aggregator/aggregator.html', 'ImportExportTest/news/conference-website-online/58963_10200248622793289_1140334088_n.jpg', 'ImportExportTest/front-page/front-page.html', 'ImportExportTest.csv', 'test_folder/', 'ImportExportTest/Members/635861-game-wallpaper.jpg/', 'ImportExportTest/test.csv/test.csv', 'ImportExportTest/Members/', 'ImportExportTest/front-page/', 'ImportExportTest/test.csv/', 'test.html', 'ImportExportTest/news/conference-website-online/', 'ImportExportTest/news/aggregator/', 'ImportExportTest/news/', 'ImportExportTest/Members/635861-game-wallpaper.jpg/635861-game-wallpaper.jpg',  # NOQA: E501
+            'ImportExportTest/',
+            'test_folder/test.jpg',
+            'ImportExportTest/14-ist.webm/14  IST.webm',
+            'ImportExportTest/14-ist.webm/',
+            'ImportExportTest/news/aggregator/aggregator.html',
+            'ImportExportTest/news/conference-website-online/58963_10200248622793289_1140334088_n.jpg',  # NOQA: E501
+            'ImportExportTest/front-page/front-page.html',
+            'ImportExportTest.csv',
+            'test_folder/',
+            'ImportExportTest/Members/635861-game-wallpaper.jpg/',
+            'ImportExportTest/test.csv/test.csv',
+            'ImportExportTest/Members/',
+            'ImportExportTest/front-page/',
+            'ImportExportTest/test.csv/',
+            'test.html',
+            'ImportExportTest/news/conference-website-online/',
+            'ImportExportTest/news/aggregator/',
+            'ImportExportTest/news/',
+            'ImportExportTest/Members/635861-game-wallpaper.jpg/635861-game-wallpaper.jpg',  # NOQA: E501
         ]
 
         files = self.InMemoryZip.getfiles(self.data.getzip())
