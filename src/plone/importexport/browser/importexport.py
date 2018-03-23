@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
+
 from DateTime import DateTime
 from plone import api
 from plone.importexport import utils
 from plone.importexport.exceptions import ImportExportError
-# An adapter to deserialize a JSON object into an object in Plone.
 from plone.restapi.interfaces import IDeserializeFromJson
 from plone.restapi.interfaces import ISerializeToJson
 from Products.Five import BrowserView

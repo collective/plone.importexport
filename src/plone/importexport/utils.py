@@ -139,8 +139,8 @@ class Pipeline(object):
                         # converting list and dict to quoted json
                         data[key] = json.dumps(data[key])
                 writer.writerow(data)
-        except IOError as (errno, strerror):
-                log.error('I/O error(%s): %s', errno, strerror)
+        except IOError as e:
+                log.error('I/O error(%s): %s', e.errno, e.strerror)
         else:
             if exportType == 'csv' or exportType == 'combined':
                 obj.zip.append(id_ + '.csv', csv_output.getvalue())
