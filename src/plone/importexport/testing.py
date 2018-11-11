@@ -19,7 +19,7 @@ class PloneImportexportLayer(PloneSandboxLayer):
         xmlconfig.file(
             'configure.zcml',
             plone.importexport,
-            context=configurationContext
+            context=configurationContext,
         )
 
     def setUpPloneSite(self, portal):
@@ -31,13 +31,13 @@ PLONE_IMPORTEXPORT_FIXTURE = PloneImportexportLayer()
 
 PLONE_IMPORTEXPORT_INTEGRATION_TESTING = IntegrationTesting(
     bases=(PLONE_IMPORTEXPORT_FIXTURE,),
-    name='PloneImportexportLayer:IntegrationTesting'
+    name='PloneImportexportLayer:IntegrationTesting',
 )
 
 
 PLONE_IMPORTEXPORT_FUNCTIONAL_TESTING = FunctionalTesting(
     bases=(PLONE_IMPORTEXPORT_FIXTURE,),
-    name='PloneImportexportLayer:FunctionalTesting'
+    name='PloneImportexportLayer:FunctionalTesting',
 )
 
 
@@ -45,7 +45,7 @@ PLONE_IMPORTEXPORT_ACCEPTANCE_TESTING = FunctionalTesting(
     bases=(
         PLONE_IMPORTEXPORT_FIXTURE,
         REMOTE_LIBRARY_BUNDLE_FIXTURE,
-        z2.ZSERVER_FIXTURE
+        z2.ZSERVER_FIXTURE,
     ),
-    name='PloneImportexportLayer:AcceptanceTesting'
+    name='PloneImportexportLayer:AcceptanceTesting',
 )

@@ -1,29 +1,48 @@
+# custom
 language: python
-python: 2.7
 sudo: false
-cache:
-  directories:
-  - eggs
-env:
-- PLONE_VERSION=4.3
-- PLONE_VERSION=5.0
-- PLONE_VERSION=5.1
+
 matrix:
-  fast_finish: true
+    include:
+        - python: "2.7"
+          env: TOXENV=docs,lint-py27,code-analysis
+        - python: "3.6"
+          env: TOXENV=docs,lint-py36
+        - python: "2.7"
+          env: TOXENV=py27-Plone51
+    allow_failures:
+        - python: "3.6"
+          env: TOXENV=py36-Plone52
+
 before_install:
-- pip install coveralls pylint
+    - mkdir -p $HOME/buildout-cache/{downloads,eggs,extends}
+    - mkdir $HOME/.buildout
+    - echo "[buildout]" > $HOME/.buildout/default.cfg
+    - echo "download-cache = $HOME/buildout-cache/downloads" >> $HOME/.buildout/default.cfg
+    - echo "eggs-directory = $HOME/buildout-cache/eggs" >> $HOME/.buildout/default.cfg
+    - echo "extends-cache = $HOME/buildout-cache/extends" >> $HOME/.buildout/default.cfg
+    - echo "abi-tag-eggs = true" >> $HOME/.buildout/default.cfg
+
 install:
-- sed -ie "s#test-5.1#test-$PLONE_VERSION#" buildout.cfg
-- python bootstrap.py
-- bin/buildout annotate
-- bin/buildout
+    - travis_retry pip install -U setuptools==33.1.1 tox coveralls coverage
+
+before_script:
+    - export DISPLAY=:99.0
+    - sh -e /etc/init.d/xvfb start
+    - firefox -v
+
 script:
-- bin/code-analysis
-- bin/test
-- pylint --py3k --disable=no-absolute-import src/plone/importexport
+    - travis_retry tox
+
 after_success:
-- bin/createcoverage --output-dir=htmlcov
-- coveralls
+    - coverage combine
+    - coveralls
+
 notifications:
-  email:
-    - ebrehault@gmail.com
+    email: false
+
+cache:
+    pip: true
+    directories:
+      - eggs
+      - $HOME/buildout-cache
