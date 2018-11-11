@@ -7,7 +7,7 @@ from plone import api
 from plone.importexport.exceptions import ImportExportError
 from plone.importexport import utils
 from plone import api
-import unittest2 as unittest
+import unittest
 from zope.component import getMultiAdapter
 from cStringIO import StringIO
 import fnmatch
