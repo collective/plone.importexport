@@ -17,3 +17,12 @@ share/*
 src/plone/importexport/browser/dump/*
 *.pyc
 var/*
+.Python
+.ropeproject/
+.tox/
+.python-version
+.coverage
+.coverage*
+coverage.xml
+htmlcov/
+reports/
