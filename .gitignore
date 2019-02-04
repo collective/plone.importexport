@@ -16,6 +16,7 @@ local*
 share/*
 src/plone/importexport/browser/dump/*
 *.pyc
+*.swp
 var/*
 .Python
 .ropeproject/
