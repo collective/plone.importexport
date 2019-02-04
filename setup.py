@@ -16,14 +16,16 @@ long_description = (
 
 setup(
     name='plone.importexport',
-    version='0.1',
+    version='1.1',
     description="Plone Content import/export",
     long_description=long_description,
     # Get more from http://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         "Environment :: Web Environment",
         "Framework :: Plone",
-        "Framework :: Plone :: 5.0.4",
+        "Framework :: Plone :: 4.3.18",
+        "Framework :: Plone :: 5.0.8",
+        "Framework :: Plone :: 5.1.4",
         "Programming Language :: Python",
         "Programming Language :: Python :: 2.7",
     ],
