@@ -4,6 +4,7 @@ from DateTime import DateTime
 from plone import api
 from plone.importexport import utils
 from plone.importexport.exceptions import ImportExportError
+from plone.i18n.normalizer import idnormalizer
 from plone.restapi.interfaces import IDeserializeFromJson
 from plone.restapi.interfaces import ISerializeToJson
 from Products.Five import BrowserView
@@ -221,16 +222,21 @@ class ImportExportView(BrowserView):
 
             #  os.sep is preferrable to support multiple filesystem
             #  return parent of context
-            obj = self.getobjcontext(
-                obj_data['path'].split(os.sep)[:-1])
+            parent_path = obj_data['path'].split(os.sep)[:-1]
+            obj = self.getobjcontext(parent_path)
 
             if not obj:
                 log += 'pathError, Parent object not found for {arg}\n'.format(
                     arg=obj_data['path'])
                 continue
 
-            id_ = obj_data.get('id', None)
+            url_id = obj_data['path'].split(os.sep)[-1]
             title = obj_data.get('title', None)
+
+            if parent_path[-1] == url_id:
+                url_id = None if not title else idnormalizer(title)
+
+            id_ = obj_data.get('id', url_id)
             type_ = obj_data.get('@type', None)
 
             # creating  random id
@@ -475,6 +481,8 @@ class ImportExportView(BrowserView):
 
             self.request.RESPONSE.setHeader(
                 'content-type', 'application/text; charset=utf-8')
+            cd = 'attachment; filename=import-log.txt'
+            self.request.RESPONSE.setHeader('Content-Disposition', cd)
             return error_log
 
         else:
