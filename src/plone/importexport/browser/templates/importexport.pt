@@ -162,7 +162,7 @@ i18n:domain="plone">
           <table class="listing import_export_settings">
           <tr>
           <td>
-          <label for="new_content">If content is new <br />
+          <label for="new_content"><h5>If content is new</h5>
           <input type="radio" name="new_content" value="add" checked="checked">
             Add and create folders
           </input><br />          
@@ -173,7 +173,7 @@ i18n:domain="plone">
           </label>
           </td>
           <td>
-          <label for="matching_content">If duplicate found <br />
+          <label for="matching_content"><h5>If site content matches key</h5>
           <input type="radio" name="matching_content" value="update" checked="checked">
             Update
           </input>          
@@ -181,11 +181,12 @@ i18n:domain="plone">
           </label>
           </td>
           <td>
-          <label for="existing_content_no_match">If existing content does not match<br />
+          <label for="existing_content_no_match"><h5>If site content does not match key</h5>
           <input type="radio" name="existing_content_no_match" value="skip" checked="checked">
             Skip
           </input>
-          <input type="radio" name="existing_content_no_match" value="remove" checked="checked">
+          <br />
+          <input type="radio" name="existing_content_no_match" value="remove">
             Remove
           </input>
 
@@ -197,7 +198,7 @@ i18n:domain="plone">
               <!-- File Import mechanism -->
               <div class="field">
                  <div class="pat-upload" 
-                    data-pat-upload='{"showTitle":false, "paramName":file, "ajaxUpload": false}'>
+                    data-pat-upload='{"wrap":false, showTitle":false, "paramName":file, "ajaxUpload": false}'>
        
             <div class="formHelp" i18n:translate="import_basic_importfile_help">
                   Select a CSV or a ZIP file providing the contents to import.
