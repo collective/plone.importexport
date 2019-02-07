@@ -278,29 +278,27 @@ class Pipeline(object):
                 except Exception:
                     error_log += ("""Error in fetching/encoding blob
                     from zip {arg}""".format(arg=obj_data['path']))
-
-        if (
-                obj_data.get('text', None) and 
-                obj_data['text'].get('content-type', None)
-           ):
-            type_ = obj_data['text']['content-type'].split('/')[-1]
-            value = obj_data['text'].get('download', None)
+        data_ = obj_data.get('text', None)
+        data_type_ = obj_data['text'].get('content-type', None)
+        if  data_ and data_type_:
+            type_ = data_type_.split('/')[-1]
+            value = data_.get('download', None)
             if type_ == 'html' and value and files.get(value, None):
                 try:
                     # decoding
                     file_data = files[value].read().decode(
-                        obj_data['text']['encoding'])
+                        data_['encoding'])
 
                     # replacing old_UID with new_uid
                     file_data = self.mapping.internallink(file_data)
 
                     # encoding
                     file_data = file_data.encode(
-                        obj_data['text']['encoding'])
+                        data_['encoding'])
 
-                    obj_data['text']['data'] = file_data
+                    data_['data'] = file_data
 
-                    del obj_data['text']['download']
+                    del data_['download']
                 except Exception:
                     error_log += ("""Error in fetching/encoding blob
                     from zip {arg}""".format(arg=obj_data['path']))
