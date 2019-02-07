@@ -279,9 +279,8 @@ class Pipeline(object):
                     error_log += ("""Error in fetching/encoding blob
                     from zip {arg}""".format(arg=obj_data['path']))
         data_ = obj_data.get('text', None)
-        data_type_ = obj_data['text'].get('content-type', None)
-        if  data_ and data_type_:
-            type_ = data_type_.split('/')[-1]
+        if  data_ and data_.get('content-type', None):
+            type_ = data_.get('content-type', None).split('/')[-1]
             value = data_.get('download', None)
             if type_ == 'html' and value and files.get(value, None):
                 try:

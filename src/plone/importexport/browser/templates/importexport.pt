@@ -152,6 +152,13 @@ i18n:domain="plone">
           <div class="formHelp">
            Use the settings below to customise the import behaviour
            </div>
+
+<h5>Primary Key<h5>
+ <select name="import_key" class="pat-select2" data-pat-select2="width:20em">
+     <option value="Path">Path</option>
+     <option value="UID">UID</option>
+   </select>
+<h5>Import settings<h5>
           <table class="listing import_export_settings">
           <tr>
           <td>
@@ -189,12 +196,16 @@ i18n:domain="plone">
 
               <!-- File Import mechanism -->
               <div class="field">
-                <label for="importfile">File</label>
-                <div class="formHelp" i18n:translate="import_basic_importfile_help">
+                 <div class="pat-upload" 
+                    data-pat-upload='{"showTitle":false, "paramName":file, "ajaxUpload": false}'>
+       
+            <div class="formHelp" i18n:translate="import_basic_importfile_help">
                   Select a CSV or a ZIP file providing the contents to import.
                 </div>
-                <input id="uploadID" type="file" name="file" multiple="multiple" />
-
+              
+       
+     </div>
+<!-- -->
               </div>
 
               <div id="table">
