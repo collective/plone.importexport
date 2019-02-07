@@ -529,8 +529,8 @@ class TestPipeline(unittest.TestCase):
             'created': u'2017-08-25T12:00:51+05:30',
             'version': u'current',
             '@components': {u'breadcrumbs': {},
-            u'navigation': {},
-            u'workflow': {}},
+                u'navigation': {},
+                u'workflow': {}},
             'review_state': u'published',
             'creators': [u'admin'],
             '@type': u'Folder',
@@ -564,9 +564,9 @@ class TestPipeline(unittest.TestCase):
                 {},
                 {},
                 {},
-                {}
+                {},
             ],
-            jsonList
+            jsonList,
         )
 
     def test_fillblobintojson(self):
