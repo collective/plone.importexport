@@ -10,7 +10,7 @@ i18n:domain="plone">
 </head>
 <body>
   <metal:style fill-slot="style_slot">
-    <script type="text/javascript" src="++resource++plone.importexport/import_export.css"></script>
+    <link rel="stylesheet" type="text/css" href="++resource++plone.importexport/import_export.css" />
   </metal:style>
 
   <metal:js fill-slot="javascript_head_slot">
@@ -152,13 +152,13 @@ i18n:domain="plone">
           <div class="formHelp">
            Use the settings below to customise the import behaviour
            </div>
-          <table>
+          <table class="listing import_export_settings">
           <tr>
           <td>
           <label for="new_content">If content is new <br />
           <input type="radio" name="new_content" value="add" checked="checked">
             Add and create folders
-          </input>          
+          </input><br />          
 
           <input type="radio" name="new_content" value="skip" >
             Skip
