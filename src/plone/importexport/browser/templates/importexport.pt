@@ -148,7 +148,7 @@ i18n:domain="plone">
           <div>
 
             <form action="imports" enctype="multipart/form-data" method="POST">
-                            <label for="importSettings"> Custom Import Settings 
+              <h5>Custom Import Settings</h5>
           <div class="formHelp">
            Use the settings below to customise the import behaviour
            </div>
