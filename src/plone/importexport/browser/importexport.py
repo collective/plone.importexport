@@ -972,6 +972,13 @@ class ImportExportView(BrowserView):
             # request files
             file_ = self.request.get('file')
 
+            import_key = self.request.get('import_key')
+            # import settings
+            # match related settings, based on defined key
+            new_content = self.request.get('new_content')
+            matching_content = self.request.get('matching_content')
+            existing_content_no_match = self.request.get('existing_content_no_match')
+
             # files are at self.files
             self.files = {}
             self.requestFile(file_)
