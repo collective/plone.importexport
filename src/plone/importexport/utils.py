@@ -280,9 +280,9 @@ class Pipeline(object):
                     from zip {arg}""".format(arg=obj_data['path']))
 
         if (
-                obj_data.get('text', None) and \
+                obj_data.get('text', None) and 
                 obj_data['text'].get('content-type', None)
-                ):
+           ):
             type_ = obj_data['text']['content-type'].split('/')[-1]
             value = obj_data['text'].get('download', None)
             if type_ == 'html' and value and files.get(value, None):
