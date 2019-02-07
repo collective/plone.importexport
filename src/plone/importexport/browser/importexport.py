@@ -208,7 +208,6 @@ class ImportExportView(BrowserView):
         for index in range(len(data)):
 
             obj_data = data[index]
-            import pdb;pdb.set_trace()
             if not obj_data.get('path', None):
                 log += 'pathError in {arg}\n'.format(arg=obj_data['path'])
                 continue
