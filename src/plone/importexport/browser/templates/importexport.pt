@@ -70,7 +70,7 @@ i18n:domain="plone">
 
     <!-- Advance Tab -->
     <fieldset>
-      <legend i18n:translate="">Advance</legend>
+      <legend i18n:translate="">Advanced</legend>
 
       <div class="pat-autotoc autotabs" data-pat-autotoc="section:subfieldset;
         levels:h1;">
