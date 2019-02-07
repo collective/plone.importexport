@@ -111,17 +111,30 @@ i18n:domain="plone">
                 name="Deselect"/>
             </div>
 
-            <table>
-              <tr tal:repeat="val python: view.getExportfields().values()">
-                <td tal:repeat="index python: range(len(val))">
-                  <input type="checkbox" name='exportFields' value='null'
-                    tal:attributes="value python: val[index]">
-                  <p tal:content="text python: val[index]">
-                    field
-                  </p>
-                  </input>
-                </td>
-              </tr>
+            <table class="listing">
+              <thead>
+            <tr>
+                <th class="nosort">
+                    <!-- <input class="noborder" type="checkbox" src="http://importexport-pigeonflight.c9users.io/Plone/select_all_icon.png" name="selectButton" title="Select all items" onclick="toggleSelect(this,'paths:list');" alt="Select all items">
+                    -->
+                    Field
+                </th>
+            </tr>
+        </thead>
+              <tbody>
+              <tal:block tal:repeat="val python: view.getExportfields().values()">
+                <tal:block tal:define="oddrow repeat/val/odd;">
+                <tr tal:attributes="class python:oddrow and 'even' or 'odd'" tal:repeat="index python: range(len(val))">
+                  <td>
+                  <label tal:attributes="for python:val[index]">
+                    <input type="checkbox" name='exportFields' value='null'
+                    tal:attributes="value python:val[index]"></input>
+                    <tal:block tal:content="python:val[index]"/>
+                  </label></td>
+                </tr>
+              </tal:block>
+              </tal:block>
+              </tbody>
             </table>
 
           </section>
