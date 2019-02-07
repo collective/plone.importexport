@@ -81,27 +81,26 @@ i18n:domain="plone">
 
         <form action="export" method="POST">
 
-          <label> Specify Export type </label>
-          <br>
+          <label for="exportFormat"> Custom Export Settings 
+          <div class="formHelp">
+           Specify fields to export.
+           If nothing is selected, all fields will be exported
+           (@type, path, id and UID are always exported).
+           </div>
+          <input type="radio" name="exportFormat" value="combined" checked="checked">
+            Combined
+          </input>          
 
           <input type="radio" name="exportFormat" value="csv" >
-            Only csv
+            CSV only
           </input>
 
           <input type="radio" name="exportFormat" value="files" >
-            Only files
+            Files only
           </input>
 
-          <input type="radio" name="exportFormat" value="combined" checked="checked">
-            Combined
-          </input>
 
-          <br>
-          <br>
-
-          <label> Specify fields to export </label>
-          <h5> Defualt fields:{@type, path, id, UID}</h5>
-          <h5> Caution: If nothing is selected, all fields will be exported</h5>
+          </label>
           <section>
 
             <div >
@@ -114,10 +113,8 @@ i18n:domain="plone">
             <table class="listing">
               <thead>
             <tr>
-                <th class="nosort">
-                    <!-- <input class="noborder" type="checkbox" src="http://importexport-pigeonflight.c9users.io/Plone/select_all_icon.png" name="selectButton" title="Select all items" onclick="toggleSelect(this,'paths:list');" alt="Select all items">
-                    -->
-                    Field
+                <th class="sort">
+                    Field to export
                 </th>
             </tr>
         </thead>

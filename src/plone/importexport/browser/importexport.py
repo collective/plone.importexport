@@ -173,8 +173,7 @@ class ImportExportView(BrowserView):
                 # send value as a string if only one value have been checked
                 if isinstance(headers, str):
                     headers = [headers]
-                headers = list(set(MUST_INCLUDED_ATTRIBUTES +
-                                   headers))
+                headers = list(set(MUST_INCLUDED_ATTRIBUTES + headers))
 
             else:
                 # 'No check provided. Thus exporting whole content'
