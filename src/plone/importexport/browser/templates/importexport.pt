@@ -167,9 +167,20 @@ i18n:domain="plone">
           </td>
           <td>
           <label for="matching_content">If duplicate found <br />
-          <input type="radio" name="matching_content" value="skip" checked="checked">
+          <input type="radio" name="matching_content" value="update" checked="checked">
             Update
           </input>          
+
+          </label>
+          </td>
+          <td>
+          <label for="existing_content_no_match">If existing content does not match<br />
+          <input type="radio" name="existing_content_no_match" value="skip" checked="checked">
+            Skip
+          </input>
+          <input type="radio" name="existing_content_no_match" value="remove" checked="checked">
+            Remove
+          </input>
 
           </label>
           </td>
