@@ -202,13 +202,13 @@ class ImportExportView(BrowserView):
             raise ImportExportError('Invalid Request')
 
     # invoke non-existent content,  if any
-    def createcontent(self, data):
+    def createcontent(self, data, settings):
 
         log = ''
         for index in range(len(data)):
 
             obj_data = data[index]
-
+            import pdb;pdb.set_trace()
             if not obj_data.get('path', None):
                 log += 'pathError in {arg}\n'.format(arg=obj_data['path'])
                 continue
@@ -244,7 +244,8 @@ class ImportExportView(BrowserView):
             else:
                 new_id = id_
 
-            # check if context exist
+            # check if context exists
+            
             if not obj.get(new_id, None):
 
                     log += 'creating new object {arg}\n'.format(
@@ -437,8 +438,14 @@ class ImportExportView(BrowserView):
             # convert csv to json
             data = self.conversion.converttojson(
                 data=self.files.getCsv(), header=include)
-            # invoke non-existent content,  if any
-            error_log += self.createcontent(data)
+           
+            # check settings
+            if settings['new_content'] == "skip":
+                pass
+                # skip creation of new content
+            if settings['new_content'] == "add":
+                # invoke non-existent content,  if any
+                error_log += self.createcontent(data=data,settings={})
 
             # map old and new UID in memory
             self.mapping.mapNewUID(data)
@@ -973,12 +980,13 @@ class ImportExportView(BrowserView):
             file_ = self.request.get('file')
 
             ## import settings
+            settings = {}
             # get the defined import key
-            import_key = self.request.get('import_key')
+            settings['import_key'] = self.request.get('import_key')
             # match related settings, based on defined key
-            new_content = self.request.get('new_content')
-            matching_content = self.request.get('matching_content')
-            existing_content_no_match = self.request.get('existing_content_no_match')
+            settings['new_content'] = self.request.get('new_content')
+            settings['matching_content'] = self.request.get('matching_content')
+            settings['existing_content_no_match'] = self.request.get('existing_content_no_match')
 
             # files are at self.files
             self.files = {}
