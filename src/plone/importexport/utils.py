@@ -1,20 +1,43 @@
 # -*- coding: UTF-8 -*-
-from bs4 import BeautifulSoup
-from plone.importexport.exceptions import ImportExportError
-from plone.uuid.interfaces import IUUID
-
-import cStringIO
 import csv
+import cStringIO
 import fnmatch
 import json
 import logging
 import operator
 import os
-import StringIO
 import zipfile
+import StringIO
 
+from bs4 import BeautifulSoup
+from plone import api
+from plone.uuid.interfaces import IUUID
+
+from plone.importexport.exceptions import ImportExportError
+from plone.importexport.interfaces import IImportExportSettings
 
 log = logging.getLogger()
+
+
+def remove_from_list(ls, val):
+    if val in ls:
+        ls.remove(val)
+
+
+def get_metadata_pKeys():
+    # default_ = [u'path', u'UID']
+    # try:
+    #     return api.portal.get_registry_record(
+    #         'metadatafields_as_primary_keys',
+    #         interface=IImportExportSettings,
+    #         default=default_
+    #     )
+    # except Exception as e:
+    #     log.error(e)
+    
+    catalog = api.portal.get_tool('portal_catalog')
+    default_ = catalog.indexes()
+    return default_
 
 
 class InMemoryZip(object):
@@ -310,6 +333,7 @@ class mapping(object):
     def __init__(self, obj):
         self.mapping = {}
         self.obj = obj
+        self.available_pKeys = get_metadata_pKeys()
 
     def mapNewUID(self, content):
 

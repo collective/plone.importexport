@@ -145,98 +145,99 @@ i18n:domain="plone">
 
         <h1 i18n:translate="">Import</h1>
 
-          <div>
+        <div>
 
-            <form action="imports" enctype="multipart/form-data" method="POST">
-              <h5>Custom Import Settings</h5>
-          <div class="formHelp">
-           Use the settings below to customise the import behaviour
-           </div>
+          <form action="imports" enctype="multipart/form-data" method="POST">
+            <h5>Custom Import Settings</h5>
+            <div class="formHelp">
+             Use the settings below to customise the import behaviour
+             </div>
 
-<h5>Primary Key<h5>
- <select name="import_key" class="pat-select2" data-pat-select2="width:20em">
-     <option value="Path">Path</option>
-     <option value="UID">UID</option>
-   </select>
-<h5>Import settings<h5>
-          <table class="listing import_export_settings">
-          <tr>
-          <td>
-          <label for="new_content"><h5>If content is new</h5>
-          <input type="radio" name="new_content" value="add" checked="checked">
-            Add and create folders
-          </input><br />          
+            <h5>Primary Key<h5>
+            <select name="import_key" class="pat-select2" data-pat-select2="width:20em">
+              <tal:block tal:repeat="pKey view/available_pKeys">
+                <option tal:attributes="value pKey" tal:content="pKey/capitalize"></option>
+              </tal:block>
+            </select>
 
-          <input type="radio" name="new_content" value="skip" >
-            Skip
-          </input> 
-          </label>
-          </td>
-          <td>
-          <label for="matching_content"><h5>If site content matches key</h5>
-          <input type="radio" name="matching_content" value="update" checked="checked">
-            Update
-          </input>          
+            <h5>Import settings<h5>
+            <table class="listing import_export_settings">
+              <tr>
+                <td>
+                  <label for="new_content"><h5>If content is new</h5>
+                  <input type="radio" name="new_content" value="add" checked="checked">
+                    Add and create folders
+                  </input><br />          
+        
+                  <input type="radio" name="new_content" value="skip" >
+                    Skip
+                  </input> 
+                  </label>
+                </td>
+                <td>
+                  <label for="matching_content"><h5>If site content matches key</h5>
+                  <input type="radio" name="matching_content" value="update" checked="checked">
+                    Update
+                  </input>
+                  <input type="radio" name="matching_content" value="ignore">
+                    skip
+                  </input>          
+        
+                  </label>
+                </td>
+                <td>
+                  <label for="existing_content_no_match"><h5>If site content does not match key</h5>
+                  <input type="radio" name="existing_content_no_match" value="skip" checked="checked">
+                    Skip
+                  </input>
+                  <br />
+                  <input type="radio" name="existing_content_no_match" value="remove">
+                    Remove
+                  </input>
+        
+                  </label>
+                </td>
+              </tr>
+            </table>
 
-          </label>
-          </td>
-          <td>
-          <label for="existing_content_no_match"><h5>If site content does not match key</h5>
-          <input type="radio" name="existing_content_no_match" value="skip" checked="checked">
-            Skip
-          </input>
-          <br />
-          <input type="radio" name="existing_content_no_match" value="remove">
-            Remove
-          </input>
-
-          </label>
-          </td>
-          </tr>
-          </table>
-
-              <!-- File Import mechanism -->
-              <div class="field">
-                 <div class="pat-upload" 
-                    data-pat-upload='{"wrap":false, showTitle":false, "paramName":file, "ajaxUpload": false}'>
-       
-            <div class="formHelp" i18n:translate="import_basic_importfile_help">
-                  Select a CSV or a ZIP file providing the contents to import.
-                </div>
-              
-       
-     </div>
-<!-- -->
+            <!-- File Import mechanism -->
+            <div class="field">
+              <label for="importfile">File</label>
+              <div class="formHelp" i18n:translate="import_basic_importfile_help">
+                Select a CSV or a ZIP file providing the contents to import.
               </div>
+              <input id="uploadID" type="file" name="file" multiple="multiple" />
 
-              <div id="table">
+            </div>
 
-
-                <!-- dumb method using tal mechanism, which is not in use anymore-->
-                <div >
-                  <!-- <table cellspacing="0" cellpadding="0" border="0'">
-                    <tr tal:repeat="val python: view.getImportfields().values()">
-                      <td tal:repeat="index python: range(len(val))">
-                        <input type="checkbox" name='importFields' value='null'
-                          tal:attributes="value python: val[index]">
-                        <p tal:content="text python: val[index]">
-                          field
-                        </p>
-                        </input>
-                      </td>
-                    </tr>
-                  </table> -->
-                </div>
-
-                <!-- this is where create new option will render -->
-                <div id="createNew">
-                </div>
-
+            <div id="table">
+  
+  
+              <!-- dumb method using tal mechanism, which is not in use anymore-->
+              <!--<div >-->
+              <!--   <table cellspacing="0" cellpadding="0" border="0'">-->
+              <!--    <tr tal:repeat="val python: view.getImportfields().values()">-->
+              <!--      <td tal:repeat="index python: range(len(val))">-->
+              <!--        <input type="checkbox" name='importFields' value='null'-->
+              <!--          tal:attributes="value python: val[index]">-->
+              <!--        <p tal:content="text python: val[index]">-->
+              <!--          field-->
+              <!--        </p>-->
+              <!--        </input>-->
+              <!--      </td>-->
+              <!--    </tr>-->
+              <!--  </table>-->
+              <!--</div>-->
+  
+              <!-- this is where create new option will render -->
+              <div id="createNew">
               </div>
+  
+            </div>
 
-            </form>
+          </form>
 
-          </div>
+        </div>
 
       </subfieldset>
 

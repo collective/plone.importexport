@@ -57,6 +57,9 @@ class ImportExportView(BrowserView):
         self.importHeaders = None
         self.existingPath = []
         self.files = {}
+        self.settings = {}
+        self.primary_key = u'path'
+        self.available_pKeys = utils.get_metadata_pKeys()
 
     # this will del MUST_EXCLUDED_ATTRIBUTES from data till leaves of the tree
     def exclude_attributes(self, data):
@@ -114,7 +117,7 @@ class ImportExportView(BrowserView):
 
         path = str(context.absolute_url_path()[1:])
 
-        if self.request.get('actionExist', None) == 'ignore' and (path in self.existingPath):  # NOQA: E501
+        if self.request.get('matching_content', None) == 'ignore' and (path in self.existingPath):  # NOQA: E501
             return 'Ignoring existing content at {arg} \n'.format(arg=path)
 
         # deserializing review_state
@@ -203,13 +206,35 @@ class ImportExportView(BrowserView):
         else:
             raise ImportExportError('Invalid Request')
 
+    def findsimilaritems(self, key, data, **filters):
+        type_ = data.get('@type', None)
+        if not type_:
+            return []
+        filters[key] = data[key]
+        filters['type'] = type_
+        return api.content.find(**filters)
+
     # invoke non-existent content,  if any
-    def createcontent(self, data, settings):
+    def createcontent(self, data):
+        
+        results = []
+        items_seen = {}
+        pkey_value = None
+        
+        # check settings
+        if self.settings['new_content'] == "skip":
+            pass
+            # skip creation of new content
+
+        if self.settings['new_content'] == "add":
+            # invoke non-existent content,  if any
+            pass
 
         log = ''
         for index in range(len(data)):
 
             obj_data = data[index]
+
             if not obj_data.get('path', None):
                 log += 'pathError in {arg}\n'.format(arg=obj_data['path'])
                 continue
@@ -217,6 +242,20 @@ class ImportExportView(BrowserView):
             if not obj_data.get('@type', None):
                 log += '@typeError in {arg}\n'.format(arg=obj_data['path'])
                 continue
+
+            if self.primary_key != 'path':
+                pkey_val = obj_data.get(self.primary_key, None)
+                if not pkey_val:
+                    log += '{primary}Error in {arg}\n'.format(
+                        arg=obj_data['path'],
+                        primary=self.primary_key)
+                    continue
+            
+                items = self.findsimilaritems(
+                    key=self.primary_key,
+                    data=obj_data,
+                )
+                
 
             #  os.sep is preferrable to support multiple filesystem
             #  return parent of context
@@ -400,14 +439,17 @@ class ImportExportView(BrowserView):
             # request files
             file_ = self.request.get('file')
 
-            ## import settings
-            settings = {}
             # get the defined import key
-            settings['import_key'] = self.request.get('import_key')
-            # match related settings, based on defined key
-            settings['new_content'] = self.request.get('new_content')
-            settings['matching_content'] = self.request.get('matching_content')
-            settings['existing_content_no_match'] = self.request.get('existing_content_no_match')
+            self.primary_key = \
+                self.request.get('import_key', 'path')
+
+            # match related self.settings, based on defined key
+            self.settings['new_content'] = \
+                self.request.get('new_content', 'add')
+            self.settings['matching_content'] = \
+                self.request.get('matching_content')
+            self.settings['existing_content_no_match'] = \
+                self.request.get('existing_content_no_match')
 
             # files are at self.files
             self.files = {}
@@ -453,14 +495,7 @@ class ImportExportView(BrowserView):
             # convert csv to json
             data = self.conversion.converttojson(
                 data=self.files.getCsv(), header=include)
-
-            # check settings
-            if settings['new_content'] == "skip":
-                pass
-                # skip creation of new content
-            if settings['new_content'] == "add":
-                # invoke non-existent content,  if any
-                error_log += self.createcontent(data=data,settings={})
+            error_log += self.createcontent(data=data)
 
             # map old and new UID in memory
             self.mapping.mapNewUID(data)

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<registry>
+
+  <records interface="plone.importexport.interfaces.IImportExportSettings" prefix="importexport">
+      <!-- Set default values -->
+
+      <!-- Leave to empty string -->
+      <value key="metadatafields_as_primary_keys">
+        <element>path</element>
+        <element>UID</element>
+      </value>
+      
+  </records>
+  
+</registry>

@@ -19,5 +19,7 @@
         description="Installs the plone.importexport add-on."
         provides="Products.GenericSetup.interfaces.EXTENSION"
         />
+    
+    <include file="upgrades.zcml" />
 
 </configure>
