@@ -56,6 +56,7 @@ class ImportExportView(BrowserView):
         self.exportHeaders = None
         self.importHeaders = None
         self.existingPath = []
+        self.createdPath = []
         self.files = {}
         self.settings = {}
         self.primary_key = u'path'
@@ -117,7 +118,7 @@ class ImportExportView(BrowserView):
 
         path = str(context.absolute_url_path()[1:])
 
-        if self.request.get('matching_content', None) == 'ignore' and (path in self.existingPath):  # NOQA: E501
+        if path not in self.createdPath and (self.settings['matching_content'] != 'update' or (path not in self.existingPath)):
             return 'Ignoring existing content at {arg} \n'.format(arg=path)
 
         # deserializing review_state
@@ -210,8 +211,16 @@ class ImportExportView(BrowserView):
         type_ = data.get('@type', None)
         if not type_:
             return []
-        filters[key] = data[key]
+        filters[key] = self.mapping.getValueFromMetafield(
+            key,
+            data
+        )
+        if filters[key] is None:
+            return []
         filters['type'] = type_
+        filters["sort_order"] = "reverse"
+        filters["sort_on"] = "id"
+        filters["sort_limit"] = 2
         return api.content.find(**filters)
 
     # invoke non-existent content,  if any
@@ -220,35 +229,31 @@ class ImportExportView(BrowserView):
         results = []
         items_seen = {}
         pkey_value = None
-        
-        # check settings
-        if self.settings['new_content'] == "skip":
-            pass
-            # skip creation of new content
-
-        if self.settings['new_content'] == "add":
-            # invoke non-existent content,  if any
-            pass
 
         log = ''
         for index in range(len(data)):
 
             obj_data = data[index]
+            path_ = obj_data.get('path', None)
 
-            if not obj_data.get('path', None):
-                log += 'pathError in {arg}\n'.format(arg=obj_data['path'])
+            if not path_:
+                log += 'pathError in {arg}\n'.format(arg=path_)
                 continue
 
             if not obj_data.get('@type', None):
-                log += '@typeError in {arg}\n'.format(arg=obj_data['path'])
+                log += '@typeError in {arg}\n'.format(arg=path_)
                 continue
 
             if self.primary_key != 'path':
-                pkey_val = obj_data.get(self.primary_key, None)
+                pkey_val = self.mapping.getValueFromMetafield(
+                    self.primary_key,
+                    obj_data
+                )
                 if not pkey_val:
                     log += '{primary}Error in {arg}\n'.format(
-                        arg=obj_data['path'],
+                        arg=path_,
                         primary=self.primary_key)
+                    utils.remove_from_list(self.existingPath, path_)
                     continue
             
                 items = self.findsimilaritems(
@@ -256,18 +261,22 @@ class ImportExportView(BrowserView):
                     data=obj_data,
                 )
                 
+                if len(items) > 0:
+                    primary_item = items[0]
+                    obj_data['path'] = path_ = \
+                        primary_item.getPath().lstrip('/')
 
             #  os.sep is preferrable to support multiple filesystem
             #  return parent of context
-            parent_path = obj_data['path'].split(os.sep)[:-1]
+            parent_path = path_.split(os.sep)[:-1]
             obj = self.getobjcontext(parent_path)
 
             if not obj:
                 log += 'pathError, Parent object not found for {arg}\n'.format(
-                    arg=obj_data['path'])
+                    arg=path_)
                 continue
 
-            url_id = obj_data['path'].split(os.sep)[-1]
+            url_id = path_.split(os.sep)[-1]
             title = obj_data.get('title', None)
 
             if parent_path[-1] == url_id:
@@ -293,29 +302,42 @@ class ImportExportView(BrowserView):
 
             if not obj.get(new_id, None):
 
-                    log += 'creating new object {arg}\n'.format(
-                        arg=obj_data['path'].split(os.sep)[-1])
+                # check settings if new content should be skipped
+                if self.settings['new_content'] == "skip":
+                    log += 'skipping new object {arg}\n'.format(
+                        arg=path_.split(os.sep)[-1])
+                    continue
+                
+                log += 'creating new object {arg}\n'.format(
+                    arg=path_.split(os.sep)[-1])
 
-                    if not obj_data.get('@type', None):
-                        log += 'typeError in {arg}\n'.format(
-                            arg=obj_data['path'])
-                        continue
+                if not obj_data.get('@type', None):
+                    log += 'typeError in {arg}\n'.format(
+                        arg=path_)
+                    continue
 
-                    # Create object
-                    try:
-                        # invokeFactory() is more generic, it can be used for
-                        # any type of content, not just Dexterity content
-                        # and it creates a new object at
-                        # http://localhost:8080/self.context/new_id
+                # Create object
+                try:
+                    # invokeFactory() is more generic, it can be used for
+                    # any type of content, not just Dexterity content
+                    # and it creates a new object at
+                    # http://localhost:8080/self.context/new_id
 
-                        new_id = obj.invokeFactory(type_, new_id, title=title)
-                    except BadRequest as e:
-                        # self.request.response.setStatus(400)
-                        log += 'Error, BadRequest {arg}\n'.format(
-                            arg=str(e.message))
-                    except ValueError as e:
-                        # self.request.response.setStatus(400)
-                        log += 'ValueError {arg}\n'.format(arg=str(e.message))
+                    new_id = obj.invokeFactory(type_, new_id, title=title)
+                    obj_data['path'] = path_ = \
+                        "{parent_path}/{new_id}".format(
+                            parent_path="/".join(parent_path),
+                            new_id=new_id
+                        )
+                    self.existingPath.append(path_)
+                    self.createdPath.append(path_)
+                except BadRequest as e:
+                    # self.request.response.setStatus(400)
+                    log += 'Error, BadRequest {arg}\n'.format(
+                        arg=str(e.message))
+                except ValueError as e:
+                    # self.request.response.setStatus(400)
+                    log += 'ValueError {arg}\n'.format(arg=str(e.message))
 
         return log
 
@@ -447,7 +469,7 @@ class ImportExportView(BrowserView):
             self.settings['new_content'] = \
                 self.request.get('new_content', 'add')
             self.settings['matching_content'] = \
-                self.request.get('matching_content')
+                self.request.get('matching_content', 'update')
             self.settings['existing_content_no_match'] = \
                 self.request.get('existing_content_no_match')
 
@@ -495,6 +517,7 @@ class ImportExportView(BrowserView):
             # convert csv to json
             data = self.conversion.converttojson(
                 data=self.files.getCsv(), header=include)
+                
             error_log += self.createcontent(data=data)
 
             # map old and new UID in memory

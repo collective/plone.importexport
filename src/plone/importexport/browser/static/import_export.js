@@ -54,7 +54,7 @@ require(['jquery'
                         </div>
                       `
                       <!-- Dynamic Table -->
-                      htmlDump += "<table class='listing import_export_setting'">";
+                      htmlDump += "<table class='listing import_export_setting'>";
                       for (var i in Object.keys(matrix)){
                         htmlDump += "<tr>";
                         for (var j in matrix[i]){
@@ -73,17 +73,6 @@ require(['jquery'
                       htmlDump += "</table>";
 
                       htmlDump += `
-                        <!--<label> Action to take if content already existed?</label>
-                        <br>
-
-                        <input type="radio" name="matching_content" value="update"
-                          checked="checked">
-                          Update
-                        </input>
-
-                        <input type="radio" name="matching_content" value="ignore" >
-                          Ignore
-                        </input>-->
 
                         <!-- TODO Radio button for create new -->
                         <!-- <input type="radio" name="matching_content" onclick="createNew()" value="new">

@@ -156,7 +156,7 @@ i18n:domain="plone">
             <h5>Primary Key<h5>
             <select name="import_key" class="pat-select2" data-pat-select2="width:20em">
               <tal:block tal:repeat="pKey view/available_pKeys">
-                <option tal:attributes="value pKey" tal:content="pKey/capitalize"></option>
+                <option tal:attributes="value pKey" tal:content="pKey"></option>
               </tal:block>
             </select>
 
@@ -179,6 +179,7 @@ i18n:domain="plone">
                   <input type="radio" name="matching_content" value="update" checked="checked">
                     Update
                   </input>
+                  <br />
                   <input type="radio" name="matching_content" value="ignore">
                     skip
                   </input>          
