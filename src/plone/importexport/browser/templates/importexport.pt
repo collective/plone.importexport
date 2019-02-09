@@ -188,8 +188,8 @@ i18n:domain="plone">
                 </td>
                 <td>
                   <label for="existing_content_no_match"><h5>If site content does not match key</h5>
-                  <input type="radio" name="existing_content_no_match" value="skip" checked="checked">
-                    Skip
+                  <input type="radio" name="existing_content_no_match" value="keep" checked="checked">
+                    Keep
                   </input>
                   <br />
                   <input type="radio" name="existing_content_no_match" value="remove">

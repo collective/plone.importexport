@@ -2,6 +2,7 @@
 
 from DateTime import DateTime
 from plone import api
+from plone.app.linkintegrity.exceptions import LinkIntegrityNotificationException
 from plone.importexport import utils
 from plone.importexport.exceptions import ImportExportError
 from plone.i18n.normalizer import idnormalizer
@@ -55,11 +56,15 @@ class ImportExportView(BrowserView):
         self.request = request
         self.exportHeaders = None
         self.importHeaders = None
-        self.existingPath = []
+        self.existingPath = {}
         self.createdPath = []
+        self.matchedTraversalPaths = []
         self.files = {}
         self.settings = {}
         self.primary_key = u'path'
+        self.new_content_action = 'add'
+        self.matching_content_action = 'update'
+        self.existing_content_no_match_action = 'keep'
         self.available_pKeys = utils.get_metadata_pKeys()
 
     # this will del MUST_EXCLUDED_ATTRIBUTES from data till leaves of the tree
@@ -118,7 +123,7 @@ class ImportExportView(BrowserView):
 
         path = str(context.absolute_url_path()[1:])
 
-        if path not in self.createdPath and (self.settings['matching_content'] != 'update' or (path not in self.existingPath)):
+        if path not in self.createdPath and (self.matching_content_action != 'update' or (path not in self.existingPath)):
             return 'Ignoring existing content at {arg} \n'.format(arg=path)
 
         # deserializing review_state
@@ -135,7 +140,6 @@ class ImportExportView(BrowserView):
 
         # binding request to BrowserRequest
         zope.interface.directlyProvides(request, IBrowserRequest)
-
         # using plone.restapi to deserialize
         deserializer = queryMultiAdapter((context, request),
                                          IDeserializeFromJson)
@@ -225,7 +229,7 @@ class ImportExportView(BrowserView):
 
     # invoke non-existent content,  if any
     def createcontent(self, data):
-        
+
         results = []
         items_seen = {}
         pkey_value = None
@@ -237,7 +241,7 @@ class ImportExportView(BrowserView):
             path_ = obj_data.get('path', None)
 
             if not path_:
-                log += 'pathError in {arg}\n'.format(arg=path_)
+                log += 'pathError checking if content exist for {arg}\n'.format(arg=path_)
                 continue
 
             if not obj_data.get('@type', None):
@@ -253,14 +257,14 @@ class ImportExportView(BrowserView):
                     log += '{primary}Error in {arg}\n'.format(
                         arg=path_,
                         primary=self.primary_key)
-                    utils.remove_from_list(self.existingPath, path_)
+                    self.existingPath.pop(path_, None)
                     continue
-            
+
                 items = self.findsimilaritems(
                     key=self.primary_key,
                     data=obj_data,
                 )
-                
+
                 if len(items) > 0:
                     primary_item = items[0]
                     obj_data['path'] = path_ = \
@@ -298,16 +302,20 @@ class ImportExportView(BrowserView):
             else:
                 new_id = id_
 
-            # check if context exists
+            path_ = "{parent_path}/{new_id}".format(
+                parent_path="/".join(parent_path),
+                new_id=new_id
+            )
 
+            # check if context exists
             if not obj.get(new_id, None):
 
                 # check settings if new content should be skipped
-                if self.settings['new_content'] == "skip":
+                if self.new_content_action == "skip":
                     log += 'skipping new object {arg}\n'.format(
                         arg=path_.split(os.sep)[-1])
                     continue
-                
+
                 log += 'creating new object {arg}\n'.format(
                     arg=path_.split(os.sep)[-1])
 
@@ -324,20 +332,20 @@ class ImportExportView(BrowserView):
                     # http://localhost:8080/self.context/new_id
 
                     new_id = obj.invokeFactory(type_, new_id, title=title)
-                    obj_data['path'] = path_ = \
-                        "{parent_path}/{new_id}".format(
-                            parent_path="/".join(parent_path),
-                            new_id=new_id
-                        )
-                    self.existingPath.append(path_)
+                    obj_data['path'] = path_
+                    self.existingPath[path_] = None
                     self.createdPath.append(path_)
                 except BadRequest as e:
                     # self.request.response.setStatus(400)
                     log += 'Error, BadRequest {arg}\n'.format(
                         arg=str(e.message))
+                    continue
                 except ValueError as e:
                     # self.request.response.setStatus(400)
                     log += 'ValueError {arg}\n'.format(arg=str(e.message))
+                    continue
+
+            self.addToMatchedPaths(path_)
 
         return log
 
@@ -346,16 +354,15 @@ class ImportExportView(BrowserView):
 
         if not context:
             context = self.context
-            self.existingPath = []
+            self.existingPath = {}
 
         if context.portal_type != 'Plone Site':
-            self.existingPath.append(str(context.absolute_url_path()[1:]))
-            # self.existingPath.append(str(context))
+            self.existingPath[str(context.absolute_url_path()[1:])] = context
 
-        for member in context.objectValues():
+        for child_ctx in context.objectValues():
             # FIXME: defualt plone config @portal_type?
-            if member.portal_type != 'Plone Site':
-                    self.getExistingpath(member)
+            if child_ctx.portal_type != 'Plone Site':
+                    self.getExistingpath(child_ctx)
 
         return self.existingPath
 
@@ -449,6 +456,40 @@ class ImportExportView(BrowserView):
             self.files[filename] = file_
             return True
 
+    def addToMatchedPaths(self, path):
+        traverse_path = path.split("/")
+        for i,v in enumerate(traverse_path, start=1):
+            tmp_path = "/".join(traverse_path[:i])
+            self.matchedTraversalPaths.append(tmp_path)
+
+    def reindexMatchedTraversalPaths(self):
+        self.matchedTraversalPaths = list(set(self.matchedTraversalPaths))
+
+    def deleteNoMatchingContent(self):
+        error_log = ''
+        if self.existing_content_no_match_action != "remove":
+            return error_log
+
+        for ePath in self.existingPath.keys():
+            if ePath not in self.matchedTraversalPaths:
+                try:
+                    api.content.delete(obj=self.existingPath.pop(ePath))
+                    error_log += 'Deleting Plone content located at {arg} \n'.format(arg=ePath)
+
+                except LinkIntegrityNotificationException as e:
+                    error_log += 'integrityError in {arg} - {error} \n'.format(
+                        arg=ePath,
+                        error=e
+                    )
+
+                except ValueError as e:
+                    error_log += 'exceptionError in {arg} - {error} \n'.format(
+                        arg=ePath,
+                        error=e
+                    )
+
+        return error_log
+
     def imports(self):
 
         global MUST_EXCLUDED_ATTRIBUTES
@@ -466,12 +507,12 @@ class ImportExportView(BrowserView):
                 self.request.get('import_key', 'path')
 
             # match related self.settings, based on defined key
-            self.settings['new_content'] = \
+            self.new_content_action = \
                 self.request.get('new_content', 'add')
-            self.settings['matching_content'] = \
+            self.matching_content_action = \
                 self.request.get('matching_content', 'update')
-            self.settings['existing_content_no_match'] = \
-                self.request.get('existing_content_no_match')
+            self.existing_content_no_match_action = \
+                self.request.get('existing_content_no_match', 'keep')
 
             # files are at self.files
             self.files = {}
@@ -517,20 +558,25 @@ class ImportExportView(BrowserView):
             # convert csv to json
             data = self.conversion.converttojson(
                 data=self.files.getCsv(), header=include)
-                
+
             error_log += self.createcontent(data=data)
 
             # map old and new UID in memory
             self.mapping.mapNewUID(data)
+            self.reindexMatchedTraversalPaths()
+            error_log += self.deleteNoMatchingContent()
 
             # deserialize
             for index in range(len(data)):
 
                 obj_data = data[index]
-
-                if not obj_data.get('path', None):
-                    error_log += 'pathError in {arg} \n'.format(
+                path_ = obj_data.get('path', None)
+                if not path_:
+                    error_log += 'pathError upon deseralizing the content for {arg} \n'.format(
                         arg=obj_data['path'])
+                    continue
+                
+                if path_ not in self.matchedTraversalPaths:
                     continue
 
                 # get blob content into json data
@@ -548,7 +594,7 @@ class ImportExportView(BrowserView):
                 if object_context:
                     error_log += self.deserialize(object_context, obj_data)
                 else:
-                    error_log += 'pathError for {arg}\n'.format(
+                    error_log += 'pathError while attempting to update {arg}\n'.format(
                         arg=obj_data['path'])
 
             self.request.RESPONSE.setHeader(
