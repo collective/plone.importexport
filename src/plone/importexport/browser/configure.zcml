@@ -9,13 +9,6 @@
         name="plone.importexport"
         directory="static"
         />
-        
-   <browser:page
-      name="import-export-settings"
-      for="Products.CMFPlone.interfaces.IPloneSiteRoot"
-      class=".controlpanel.manage.ImportExportSettingsFormView"
-      permission="cmf.ManagePortal"
-      />
 
     <browser:page
         for="Products.CMFCore.interfaces.IFolderish"

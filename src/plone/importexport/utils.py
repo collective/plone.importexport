@@ -29,31 +29,17 @@ def get_metadata_pKeys():
     """
     
     catalog = api.portal.get_tool('portal_catalog')
-    default_ = catalog.indexes()
-    exclude_metafields = [
+    default_ = set(catalog.indexes())
+    exclude_metafields = set([
         'total_comments', 'effectiveRange', 'object_provides', 'commentators',
         'Type', 'cmf_uid', 'is_folderish', 'sync_uid', 'getId', 'meta_type',
         'is_default_page', 'Date', 'review_state', 'portal_type', 'expires',
         'allowedRolesAndUsers', 'getObjPositionInParent', 'in_reply_to',
         'effective', 'created', 'Creator', 'modified', 'sortable_title',
-        'getRawRelatedItems', 'Subject', 'start', 'end', 'SearchableText'
-    ]
-    for metafield in exclude_metafields:
-        remove_from_list(default_, metafield)
-        
-    # Instead of programmatically excluding metafield, create a controlpanel
-    # that stores the metafields to be used as the primary field.
-    # default_ = [u'path', u'UID']
-    # try:
-    #     return api.portal.get_registry_record(
-    #         'metadatafields_as_primary_keys',
-    #         interface=IImportExportSettings,
-    #         default=default_
-    #     )
-    # except Exception as e:
-    #     log.error(e)
-    
-    return default_
+        'getRawRelatedItems', 'Subject', 'start', 'end', 'SearchableText',
+        'path'
+    ])
+    return ['path'] + list(default_ - exclude_metafields)
 
 
 class InMemoryZip(object):

@@ -275,7 +275,7 @@ class ImportExportView(BrowserView):
         title = obj_data.get('title', None)
 
         if parent_path[-1] == url_id:
-            url_id = None if not title else idnormalizer(title)
+            url_id = None if not title else idnormalizer.normalize(title)
 
         id_ = obj_data.get('id', url_id)
         type_ = obj_data.get('@type', None)
