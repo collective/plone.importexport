@@ -227,12 +227,125 @@ class ImportExportView(BrowserView):
         filters["sort_limit"] = 2
         return api.content.find(**filters)
 
+    def recursiveCreateParentFolder(self, obj_data=None, path_=None):
+        log = ''
+        path_ = path_ or obj_data['path']
+        parent_path = path_.split(os.sep)[:-1]
+        parent_id = path_.split(os.sep)[-1]
+        obj = self.getobjcontext(parent_path)
+        if not obj:
+            return self.recursiveCreateParentFolder(
+                path_='/'.join(parent_path))
+
+        parent = api.content.create(
+            type='Folder',
+            title=parent_id.replace('-', ' ').replace('_', ' ').capitalize(),
+            container=obj,
+            name=parent_id
+        )
+        self.addToMatchedPaths("/".join(parent_path))
+        try:
+            next_state = 'publish'
+            api.content.transition(parent, transition=next_state)
+        except Exception as e:
+            log += ('stateTransitionError, unable to set the state for Plone '
+                    'content for {arg}. System reported: {error}\n'.format(
+                arg=parent.absolute_url(),
+                error=e))
+
+        log += 'Successfully create parent object for {arg}\n'.format(
+            arg=path_)
+        return log
+
+    def createcontent(self, obj_data, createAncestry=False):
+        log = ""
+        path_ = obj_data['path']
+        parent_path = path_.split(os.sep)[:-1]
+        obj = self.getobjcontext(parent_path)
+        if not obj:
+            if createAncestry and self.new_content_action == "add":
+                log += self.recursiveCreateParentFolder(obj_data)
+                obj = self.getobjcontext(parent_path)
+            if not obj:
+                log += 'pathError, Parent object not found for {arg}\n'.format(
+                    arg=path_)
+                return log
+
+        url_id = path_.split(os.sep)[-1]
+        title = obj_data.get('title', None)
+
+        if parent_path[-1] == url_id:
+            url_id = None if not title else idnormalizer(title)
+
+        id_ = obj_data.get('id', url_id)
+        type_ = obj_data.get('@type', None)
+
+        # creating  random id
+        if not id_:
+            now = DateTime()
+            new_id = '{arg1}.{arg2}.{arg3}{arg4:04d}'.format(
+                arg1=type_.lower().replace(' ', '_'),
+                arg2=now.strftime('%Y-%m-%d'),
+                arg3=str(now.millis())[7:],
+                arg4=randint(0, 9999))
+            if not title:
+                title = new_id
+        else:
+            new_id = id_
+
+        path_ = "{parent_path}/{new_id}".format(
+            parent_path="/".join(parent_path),
+            new_id=new_id
+        )
+
+        # check if context exists
+        if not obj.get(new_id, None):
+
+            # check settings if new content should be skipped
+            if self.new_content_action == "skip":
+                log += 'skipping new object {arg}\n'.format(
+                    arg=path_.split(os.sep)[-1])
+                return log
+
+            log += 'creating new object {arg}\n'.format(
+                arg=path_.split(os.sep)[-1])
+
+            if not obj_data.get('@type', None):
+                log += 'typeError in {arg}\n'.format(
+                    arg=path_)
+                return log
+
+            # Create object
+            try:
+                # invokeFactory() is more generic, it can be used for
+                # any type of content, not just Dexterity content
+                # and it creates a new object at
+                # http://localhost:8080/self.context/new_id
+
+                new_id = obj.invokeFactory(type_, new_id, title=title)
+                obj_data['path'] = path_
+                self.existingPath[path_] = None
+                self.createdPath.append(path_)
+            except BadRequest as e:
+                # self.request.response.setStatus(400)
+                log += 'Error, BadRequest {arg}\n'.format(
+                    arg=str(e.message))
+                return log
+            except ValueError as e:
+                # self.request.response.setStatus(400)
+                log += 'ValueError {arg}\n'.format(arg=str(e.message))
+                return log
+
+        self.addToMatchedPaths(path_)
+        return log
+
     # invoke non-existent content,  if any
-    def createcontent(self, data):
+    def processContentCreation(self, data):
 
         results = []
         items_seen = {}
         pkey_value = None
+        items_waiting_on_parent = []
 
         log = ''
         for index in range(len(data)):
@@ -274,78 +387,14 @@ class ImportExportView(BrowserView):
             #  return parent of context
             parent_path = path_.split(os.sep)[:-1]
             obj = self.getobjcontext(parent_path)
-
             if not obj:
-                log += 'pathError, Parent object not found for {arg}\n'.format(
-                    arg=path_)
+                items_waiting_on_parent.append(obj_data)
                 continue
 
-            url_id = path_.split(os.sep)[-1]
-            title = obj_data.get('title', None)
+            self.createcontent(obj_data)
 
-            if parent_path[-1] == url_id:
-                url_id = None if not title else idnormalizer(title)
-
-            id_ = obj_data.get('id', url_id)
-            type_ = obj_data.get('@type', None)
-
-            # creating  random id
-            if not id_:
-                now = DateTime()
-                new_id = '{arg1}.{arg2}.{arg3}{arg4:04d}'.format(
-                    arg1=type_.lower().replace(' ', '_'),
-                    arg2=now.strftime('%Y-%m-%d'),
-                    arg3=str(now.millis())[7:],
-                    arg4=randint(0, 9999))
-                if not title:
-                    title = new_id
-            else:
-                new_id = id_
-
-            path_ = "{parent_path}/{new_id}".format(
-                parent_path="/".join(parent_path),
-                new_id=new_id
-            )
-
-            # check if context exists
-            if not obj.get(new_id, None):
-
-                # check settings if new content should be skipped
-                if self.new_content_action == "skip":
-                    log += 'skipping new object {arg}\n'.format(
-                        arg=path_.split(os.sep)[-1])
-                    continue
-
-                log += 'creating new object {arg}\n'.format(
-                    arg=path_.split(os.sep)[-1])
-
-                if not obj_data.get('@type', None):
-                    log += 'typeError in {arg}\n'.format(
-                        arg=path_)
-                    continue
-
-                # Create object
-                try:
-                    # invokeFactory() is more generic, it can be used for
-                    # any type of content, not just Dexterity content
-                    # and it creates a new object at
-                    # http://localhost:8080/self.context/new_id
-
-                    new_id = obj.invokeFactory(type_, new_id, title=title)
-                    obj_data['path'] = path_
-                    self.existingPath[path_] = None
-                    self.createdPath.append(path_)
-                except BadRequest as e:
-                    # self.request.response.setStatus(400)
-                    log += 'Error, BadRequest {arg}\n'.format(
-                        arg=str(e.message))
-                    continue
-                except ValueError as e:
-                    # self.request.response.setStatus(400)
-                    log += 'ValueError {arg}\n'.format(arg=str(e.message))
-                    continue
-
-            self.addToMatchedPaths(path_)
+        for obj_data in items_waiting_on_parent:
+            log += self.createcontent(obj_data, createAncestry=True)
 
         return log
 
@@ -559,7 +608,7 @@ class ImportExportView(BrowserView):
             data = self.conversion.converttojson(
                 data=self.files.getCsv(), header=include)
 
-            error_log += self.createcontent(data=data)
+            error_log += self.processContentCreation(data=data)
 
             # map old and new UID in memory
             self.mapping.mapNewUID(data)
@@ -575,7 +624,7 @@ class ImportExportView(BrowserView):
                     error_log += 'pathError upon deseralizing the content for {arg} \n'.format(
                         arg=obj_data['path'])
                     continue
-                
+
                 if path_ not in self.matchedTraversalPaths:
                     continue
 
@@ -594,7 +643,7 @@ class ImportExportView(BrowserView):
                 if object_context:
                     error_log += self.deserialize(object_context, obj_data)
                 else:
-                    error_log += 'pathError while attempting to update {arg}\n'.format(
+                    error_log += 'Error while attempting to update {arg}\n'.format(
                         arg=obj_data['path'])
 
             self.request.RESPONSE.setHeader(

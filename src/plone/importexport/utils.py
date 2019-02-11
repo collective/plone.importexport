@@ -36,7 +36,7 @@ def get_metadata_pKeys():
         'is_default_page', 'Date', 'review_state', 'portal_type', 'expires',
         'allowedRolesAndUsers', 'getObjPositionInParent', 'in_reply_to',
         'effective', 'created', 'Creator', 'modified', 'sortable_title',
-        'getRawRelatedItems', 'Subject', 'start', 'end'
+        'getRawRelatedItems', 'Subject', 'start', 'end', 'SearchableText'
     ]
     for metafield in exclude_metafields:
         remove_from_list(default_, metafield)
