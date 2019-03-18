@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from plone.importexport.exceptions import ImportExportError
 from plone.uuid.interfaces import IUUID
 
+import unicodecsv as csv
 import cStringIO
 import csv
 import fnmatch
