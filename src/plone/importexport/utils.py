@@ -5,7 +5,6 @@ from plone.uuid.interfaces import IUUID
 
 import unicodecsv as csv
 import cStringIO
-import csv
 import fnmatch
 import json
 import logging
