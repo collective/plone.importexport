@@ -13,6 +13,7 @@ from random import randint
 from zExceptions import BadRequest
 from zope.component import queryMultiAdapter
 from zope.publisher.interfaces.browser import IBrowserRequest
+from zope.component import getMultiAdapter
 
 import json
 import os
@@ -96,8 +97,13 @@ class ImportExportView(BrowserView):
 
         # del MUST_EXCLUDED_ATTRIBUTES from data
         self.exclude_attributes(data)
-
-        data['path'] = str(obj.absolute_url_path()[1:])
+        # Get relative path of contxt
+        portal_state = getMultiAdapter((self.context, self.request), name=u'plone_portal_state')
+        site = portal_state.portal()
+        site_path = site.getPhysicalPath()
+        context_path = obj.getPhysicalPath()
+        relative_path = context_path[len(site_path):]
+        data['path'] = "/".join(relative_path)
 
         # record required data
         if data.get('@type', None) != 'Plone Site':
@@ -394,6 +400,7 @@ class ImportExportView(BrowserView):
             self.createcontent(obj_data)
 
         for obj_data in items_waiting_on_parent:
+            print obj_data
             log += self.createcontent(obj_data, createAncestry=True)
 
         return log
@@ -474,9 +481,14 @@ class ImportExportView(BrowserView):
 
     # requires path list from root
     def getobjcontext(self, path):
-
-        obj = self.context
-
+        # if path is absolute, after splitting by os.sep, the first element is empty
+        if not path:
+            return None
+        if path[0]:
+            obj = self.context
+        else:
+            portal_state = getMultiAdapter((self.context, self.request), name=u'plone_portal_state')
+            obj = portal_state.portal()
         # traversing to the desired folder
         for element in path[1:]:
             try:
@@ -544,7 +556,6 @@ class ImportExportView(BrowserView):
         global MUST_EXCLUDED_ATTRIBUTES
         global MUST_INCLUDED_ATTRIBUTES
         # global files
-
         # try:
         if self.request.method == 'POST':
 
@@ -636,6 +647,7 @@ class ImportExportView(BrowserView):
 
                 #  os.sep is preferrable to support multiple filesystem
                 #  return context of object
+                print obj_data
                 object_context = self.getobjcontext(
                     obj_data['path'].split(os.sep))
 
