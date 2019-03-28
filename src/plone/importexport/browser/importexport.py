@@ -397,6 +397,7 @@ class ImportExportView(BrowserView):
             self.createcontent(obj_data)
 
         for obj_data in items_waiting_on_parent:
+            print obj_data
             log += self.createcontent(obj_data, createAncestry=True)
 
         return log
@@ -478,14 +479,16 @@ class ImportExportView(BrowserView):
     # path may be absolute or relative
     def getobjcontext(self, path):
         # if path is absolute, after splitting by os.sep, the first element is empty
-        try:
-            if path[0]:
-                obj = self.context
-            else:
-                portal_state = getMultiAdapter((self.context, self.request), name=u'plone_portal_state')
-                obj = portal_state.portal()
-            # traversing to the desired folder
-            for element in path[1:]:
+        if not path:
+            return None
+        if path[0]:
+            obj = self.context
+        else:
+            portal_state = getMultiAdapter((self.context, self.request), name=u'plone_portal_state')
+            obj = portal_state.portal()
+        # traversing to the desired folder
+        for element in path[1:]:
+            try:
                 obj = obj[element]
         except Exception:
             return None
@@ -658,6 +661,7 @@ class ImportExportView(BrowserView):
 
                 #  os.sep is preferrable to support multiple filesystem
                 #  return context of object
+                print obj_data
                 object_context = self.getobjcontext(
                     obj_data['path'].split(os.sep))
 
