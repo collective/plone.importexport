@@ -17,13 +17,27 @@ Installation
 - cd plone.importexport
 - virtualenv .
 - source bin/activate
-- pip install -r requirements.txt
 
-Build against the target version file
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-For example to build for Plone 5.1
+For Plone 4.3.x
+-------- 
+- pip install -r requirements_plone43.txt
+- ./bin/buildout -c version_plone43.cfg
+
+For Plone 5.0.x
+-------- 
+- pip install -r requirements_plone50.txt
+- ./bin/buildout -c version_plone50.cfg
+
+For Plone 5.1.x
+-------- 
+- pip install -r requirements_plone51.txt
 - ./bin/buildout -c version_plone51.cfg
+
+
+Start the instance
+-------- 
 - ./bin/instance fg
+
 
 USAGE
 -------- 
