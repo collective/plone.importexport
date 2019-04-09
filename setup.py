@@ -41,7 +41,8 @@ setup(
         'plone.api',
         'setuptools',
         'plone.restapi',
-        'bs4'
+        'bs4',
+        'unicodecsv'
     ],
     extras_require={
         'test': [
