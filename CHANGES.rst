@@ -7,6 +7,8 @@ Changelog
 
 - Basic and Advanced Import Export Functionality.
   [Shriyanshagro]
+- Use unicodecsv package to make csv export unicode safe.
+  [instification]
 
 
 0.1 (unreleased)

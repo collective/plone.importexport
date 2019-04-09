@@ -16,7 +16,7 @@ long_description = (
 
 setup(
     name='plone.importexport',
-    version='0.1',
+    version='0.2.0',
     description="Plone Content import/export",
     long_description=long_description,
     # Get more from http://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -41,7 +41,8 @@ setup(
         'plone.api',
         'setuptools',
         'plone.restapi',
-        'bs4'
+        'bs4',
+        'unicodecsv'
     ],
     extras_require={
         'test': [
