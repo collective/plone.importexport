@@ -21,7 +21,8 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 class TestData():
 
     def __init__(self):
-        self.zip = open(os.path.join(dir_path, 'ImportExportTest.zip'), 'r')
+        self.zipname = 'ImportExportTest.zip'
+        self.zip = open(os.path.join(dir_path, self.zipname), 'r')
         self.data = [
             {'version': u'current', 'text': {u'download': u'ImportExportTest/front-page/front-page.html', u'content-type': u'text/html', u'encoding': u'utf-8'}, 'id': u'front-page', 'UID': u'cfe123705f34495995c655fa08589066', 'title': u'Plone Conference 2017, Barcelona', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'description': u'Congratulations! You have successfully installed Plone.', 'expires': u'2017-06-16T23:40:00', 'path': u'ImportExportTest/front-page', 'language': u'en-us', 'effective': u'2017-06-16T23:40:00', 'rights': u'private', 'created': u'2017-08-25T12:00:51+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Document'},  # NOQA: E501
             {'version': u'current', 'id': u'news', 'UID': u'df4d14681e0f4dd6bba272f3f588b3c3', 'title': u'News', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'description': u'Site News', 'path': u'ImportExportTest/news', 'language': u'en-us', 'effective': u'2017-08-04T13:11:00', 'rights': u'published', 'created': u'2017-08-25T12:00:51+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Folder'},  # NOQA: E501
@@ -107,7 +108,7 @@ class TestImportExportView(unittest.TestCase):
     def test_createcontent(self):
 
         with api.env.adopt_roles(['Manager']):
-            log = self.view.createcontent(self.data.getData())
+            log = self.view.processContentCreation(self.data.getData())
 
         if fnmatch.fnmatch(log, '*Error*'):
             self.fail('Failed in creating content')
@@ -117,7 +118,7 @@ class TestImportExportView(unittest.TestCase):
     def test_deserialize(self):
 
         with api.env.adopt_roles(['Manager']):
-            self.view.createcontent(self.data.getData())
+            self.view.processContentCreation(self.data.getData())
             for data in self.data.getData():
                 obj = self.view.getobjcontext(data.get('path').split(os.sep))
                 if obj:
@@ -135,7 +136,7 @@ class TestImportExportView(unittest.TestCase):
             # it's important to inject some data
             # FIXME Require a method from unit test,
             # which inject default Plone data at time of creation self.context
-            self.view.createcontent([self.data.getData(contentType='Folder')])
+            self.view.processContentCreation([self.data.getData(contentType='Folder')])
             results = self.view.serialize(self.context)
 
         # XXX: Validate results
@@ -182,7 +183,7 @@ class TestImportExportView(unittest.TestCase):
 
             # create path
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
             query = os.sep.join(data[0]['path'].split('/')[1:])
             self.assertIn(query, str(self.view.getExistingpath()))
@@ -193,7 +194,7 @@ class TestImportExportView(unittest.TestCase):
 
             # create path
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
             query = data[0]['path'].split('/')[1:]
             query = os.sep.join(query)
@@ -206,7 +207,7 @@ class TestImportExportView(unittest.TestCase):
 
             # create path
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
             query = data[0]['path'].split('/')[1:]
             query = os.sep.join(query)
@@ -218,7 +219,7 @@ class TestImportExportView(unittest.TestCase):
 
             # create path
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
             query = data[0]['path'].split('/')[1:]
             path = copy.deepcopy(query)
@@ -232,7 +233,7 @@ class TestImportExportView(unittest.TestCase):
 
             # create path
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
             headers = [
                 'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators',  # NOQA: E501
@@ -256,7 +257,7 @@ class TestImportExportView(unittest.TestCase):
 
             # create content
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
             testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'effective', u'language', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', u'title', u'subjects', u'exclude_from_nav'], 4: [u'contributors', 'version']}  # NOQA: E501
 
@@ -313,7 +314,6 @@ class TestInMemoryZip(unittest.TestCase):
             'ImportExportTest/news/',
             'ImportExportTest/Members/635861-game-wallpaper.jpg/635861-game-wallpaper.jpg',  # NOQA: E501
         ]
-
         files = self.InMemoryZip.getfiles(self.data.getzip())
         self.assertEqual(testfiles, files.keys())
 
@@ -377,7 +377,7 @@ class Testmapping(unittest.TestCase):
 
         with api.env.adopt_roles(['Manager']):
             for data in self.data.getData():
-                log = self.view.createcontent([data])
+                log = self.view.processContentCreation([data])
                 path = data.get('path').split('/')[1:]
                 path.insert(0, 'plone')
                 path = os.sep.join(path)
@@ -393,7 +393,7 @@ class Testmapping(unittest.TestCase):
         data = [self.data.getData(contentType='Folder')]
 
         with api.env.adopt_roles(['Manager']):
-            log = self.view.createcontent(data)
+            log = self.view.processContentCreation(data)
             path = data[0]['path'].split('/')[1:]
             path.insert(0, 'plone')
             path = os.sep.join(path)
@@ -529,8 +529,8 @@ class TestPipeline(unittest.TestCase):
             'created': u'2017-08-25T12:00:51+05:30',
             'version': u'current',
             '@components': {u'breadcrumbs': {},
-            u'navigation': {},
-            u'workflow': {}},
+                u'navigation': {},
+                u'workflow': {}},
             'review_state': u'published',
             'creators': [u'admin'],
             '@type': u'Folder',
@@ -564,9 +564,9 @@ class TestPipeline(unittest.TestCase):
                 {},
                 {},
                 {},
-                {}
+                {},
             ],
-            jsonList
+            jsonList,
         )
 
     def test_fillblobintojson(self):

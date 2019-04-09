@@ -16,11 +16,7 @@ class PloneImportexportLayer(PloneSandboxLayer):
     defaultBases = (PLONE_APP_CONTENTTYPES_FIXTURE,)
 
     def setUpZope(self, app, configurationContext):
-        xmlconfig.file(
-            'configure.zcml',
-            plone.importexport,
-            context=configurationContext,
-        )
+        self.loadZCML(package=plone.importexport)
 
     def setUpPloneSite(self, portal):
         applyProfile(portal, 'plone.importexport:default')
