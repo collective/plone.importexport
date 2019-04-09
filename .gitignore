@@ -1,6 +1,8 @@
+*.orig
 .installed.cfg
 .mr.developer.cfg
 bin/
+buildout-cache/
 develop-eggs/
 eggs/
 include/
