@@ -30,7 +30,7 @@ global MUST_INCLUDED_ATTRIBUTES
 # uploadedfile = 'test'
 
 # these attributes must be excluded while exporting
-# BUG: plone.restapi doesn't support desearlization of layouts, thus
+# BUG: plone.restapi doesn't support deserialization of layouts, thus
 #     excluding it from the exported data
 MUST_EXCLUDED_ATTRIBUTES = [
     'member',
@@ -104,7 +104,7 @@ class ImportExportView(BrowserView):
             results = [data]
 
         for member in obj.objectValues():
-            # FIXME: defualt plone config @portal_type?
+            # FIXME: default plone config @portal_type?
             if member.portal_type != 'Plone Site':
                 try:
                     objData = self.serialize(member)
@@ -134,7 +134,7 @@ class ImportExportView(BrowserView):
         # restapi expects a string of JSON data
         data = json.dumps(data)
 
-        # creating a spoof request with data embeded in BODY attribute,
+        # creating a spoof request with data embedded in BODY attribute,
         #     as expected by restapi
         request = UserDict.UserDict(BODY=data)
 
@@ -280,7 +280,7 @@ class ImportExportView(BrowserView):
         id_ = obj_data.get('id', url_id)
         type_ = obj_data.get('@type', None)
 
-        # creating  random id
+        # creating random id
         if not id_:
             now = DateTime()
             new_id = '{arg1}.{arg2}.{arg3}{arg4:04d}'.format(
@@ -439,7 +439,7 @@ class ImportExportView(BrowserView):
 
     # if creating new content against existing content
     #  provide list of path that occured in Plone server and uploaded csv
-    def getCommancontent(self):
+    def getCommoncontent(self):
 
         # request files
         file_ = self.request.get('file')
