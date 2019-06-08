@@ -164,9 +164,11 @@ class TestImportExportView(unittest.TestCase):
 
         self.view.requestFile(self.data.getzip())
         # get json data to create new context
-        if (self.data.getzipname() != self.view.files.keys()[0]) or (
-                self.data.getzip() != self.view.files.values()[0]):
+        zipname = self.view.files.keys()[0].split('/')[-1]
+        zipfile = self.view.files.values()[0]
+        if (self.data.getzipname() != zipname) or (self.data.getzip() != zipfile):
             self.fail()
+
 
     def test_import(self):
 
