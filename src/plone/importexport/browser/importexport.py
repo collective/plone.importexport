@@ -491,8 +491,8 @@ class ImportExportView(BrowserView):
         for element in path[1:]:
             try:
                 obj = obj[element]
-        except Exception:
-            return None
+            except Exception:
+                return None
 
         return obj
 
