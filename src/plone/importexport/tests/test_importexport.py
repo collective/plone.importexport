@@ -100,7 +100,7 @@ class TestImportExportView(unittest.TestCase):
         self.view.exclude_attributes(data)
 
         for key in excluded_attributes:
-            # XXX: asertNotIn not present
+            # XXX: assertNotIn not present
             if key in data.keys():
                 self.fail('{arg} key should not be present'.format(
                     arg=str(key)))
@@ -113,7 +113,7 @@ class TestImportExportView(unittest.TestCase):
         if fnmatch.fnmatch(log, '*Error*'):
             self.fail('Failed in creating content')
 
-    # deserialize funciton of plone.importexport module  is highly coupled and
+    # deserialize function of plone.importexport module  is highly coupled and
     #  thus unit case is too complex for this
     def test_deserialize(self):
 
@@ -164,9 +164,11 @@ class TestImportExportView(unittest.TestCase):
 
         self.view.requestFile(self.data.getzip())
         # get json data to create new context
-        if (self.data.getzipname() != self.view.files.keys()[0]) or (
-                self.data.getzip() != self.view.files.values()[0]):
+        zipname = self.view.files.keys()[0].split('/')[-1]
+        zipfile = self.view.files.values()[0]
+        if (self.data.getzipname() != zipname) or (self.data.getzip() != zipfile):
             self.fail()
+
 
     def test_import(self):
 
@@ -187,7 +189,7 @@ class TestImportExportView(unittest.TestCase):
             query = os.sep.join(data[0]['path'].split('/')[1:])
             self.assertIn(query, str(self.view.getExistingpath()))
 
-    def test_getCommanpath(self):
+    def test_getCommonpath(self):
 
         with api.env.adopt_roles(['Manager']):
 
@@ -200,7 +202,7 @@ class TestImportExportView(unittest.TestCase):
             self.assertIn(query,
                           str(self.view.getCommonpath([data[0]['path']])))
 
-    def test_getCommancontent(self):
+    def test_getCommoncontent(self):
 
         with api.env.adopt_roles(['Manager']):
 
@@ -210,7 +212,7 @@ class TestImportExportView(unittest.TestCase):
 
             query = data[0]['path'].split('/')[1:]
             query = os.sep.join(query)
-            self.assertIn(query, str(self.view.getCommancontent()))
+            self.assertIn(query, str(self.view.getCommoncontent()))
 
     def test_getobjcontext(self):
 
@@ -259,6 +261,7 @@ class TestImportExportView(unittest.TestCase):
             self.view.processContentCreation(data)
 
             testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'language', u'effective', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', 'is_folderish', u'title', u'exclude_from_nav'], 4: [u'subjects', u'contributors', 'version']}  # NOQA: E501
+
             self.assertEqual(testmatrix, self.view.getExportfields())
 
     def test_getImportfields(self):
