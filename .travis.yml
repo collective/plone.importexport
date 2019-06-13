@@ -12,7 +12,7 @@ script:
     - pip --version
     - pip install -r requirements.txt
     - ./bin/buildout -c "$VERSION_FILE"
-    - ./bin/test
+    - ./bin/test | cut -c-100
 
 notifications:
     email: false
