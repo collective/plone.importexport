@@ -174,7 +174,6 @@ class TestImportExportView(unittest.TestCase):
 
         with api.env.adopt_roles(['Manager']):
             log = self.view.imports()
-
             if fnmatch.fnmatch(log, '*Error*'):
                 self.fail('Failing log for import: \n {arg} '.format(
                     arg=str(log)))
@@ -238,17 +237,17 @@ class TestImportExportView(unittest.TestCase):
             self.view.processContentCreation(data)
 
             headers = [
-                'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators',  # NOQA: E501
+                'version', u'contributors', u'subjects', u'exclude_from_nav', u'title', u'is_folderish', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'effective', u'language', u'rights', 'created', 'modified', u'allow_discussion', u'creators',  # NOQA: E501
             ]
             self.assertEqual(headers, self.view.getheaders())
 
     def test_getmatrix(self):
 
             headers = [
-                'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators',  # NOQA: E501
+                'version', u'contributors', u'subjects', u'exclude_from_nav', u'title', u'is_folderish',u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled',u'effective', u'language', u'rights', 'created', 'modified', u'allow_discussion', u'creators',   # NOQA: E501
             ]
 
-            testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'effective', u'language', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', u'title', u'subjects', u'exclude_from_nav'], 4: [u'contributors', 'version']}  # NOQA: E501
+            testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'language', u'effective', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', 'is_folderish', u'title', u'exclude_from_nav'], 4: [u'subjects', u'contributors', 'version']}  # NOQA: E501
 
             matrix = self.view.getmatrix(headers=headers, columns=4)
             self.assertEqual(testmatrix, matrix)
@@ -261,14 +260,13 @@ class TestImportExportView(unittest.TestCase):
             data = [self.data.getData(contentType='Folder')]
             self.view.processContentCreation(data)
 
-            testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'effective', u'language', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', u'title', u'subjects', u'exclude_from_nav'], 4: [u'contributors', 'version']}  # NOQA: E501
+            testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'language', u'effective', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', 'is_folderish', u'title', u'exclude_from_nav'], 4: [u'subjects', u'contributors', 'version']}  # NOQA: E501
 
             self.assertEqual(testmatrix, self.view.getExportfields())
 
     def test_getImportfields(self):
 
         testmatrix = {u'1': [u'file', u'limit', u'customViewFields', u'effective'], u'0': [u'relatedItems', u'expires', u'start', u'end'], u'3': [u'image', u'text', u'rights', u'description'], u'2': [u'sort_reversed', u'item_count', u'sort_on', u'query'], u'5': [u'created', u'@components', u'version', u'title'], u'4': [u'review_state', u'language', u'creators', u'modified'], u'6': []}  # NOQA: E501
-
         self.assertEqual(testmatrix, json.loads(self.view.getImportfields()))
 
 
