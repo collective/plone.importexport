@@ -287,7 +287,7 @@ class Pipeline(object):
             if value and files.get(value, None):
                 try:
                     content = files[value].read()
-                    obj_data['image']['data'] = content.encode('ase64')
+                    obj_data['image']['data'] = content.encode('base64')
                     obj_data['image']['encoding'] = 'base64'
                 except Exception:
                     error_log += ("""Error in fetching/encoding blob
@@ -317,7 +317,7 @@ class Pipeline(object):
                     file_data = self.mapping.internallink(file_data)
 
                     # encoding
-                    file_data = file_data.encode(
+                    file_data = file_data.decode(
                         data_['encoding'])
 
                     data_['data'] = file_data

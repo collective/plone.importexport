@@ -517,7 +517,7 @@ class ImportExportView(BrowserView):
 
         if isinstance(file_, list):
             for element in file_:
-                    self.requestFile(element)
+                self.requestFile(element)
 
         else:
             file_.seek(0)
