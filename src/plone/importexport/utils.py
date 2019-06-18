@@ -1,9 +1,5 @@
 # -*- coding: UTF-8 -*-
-from bs4 import BeautifulSoup
-from plone.importexport.exceptions import ImportExportError
-from plone.uuid.interfaces import IUUID
-
-import unicodecsv as csv
+import csv
 import cStringIO
 import fnmatch
 import json

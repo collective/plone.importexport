@@ -13,6 +13,7 @@ from random import randint
 from zExceptions import BadRequest
 from zope.component import queryMultiAdapter
 from zope.publisher.interfaces.browser import IBrowserRequest
+from zope.component import getMultiAdapter
 
 import json
 import os
@@ -96,8 +97,13 @@ class ImportExportView(BrowserView):
 
         # del MUST_EXCLUDED_ATTRIBUTES from data
         self.exclude_attributes(data)
-
-        data['path'] = str(obj.absolute_url_path()[1:])
+        # Get relative path of contxt
+        portal_state = getMultiAdapter((self.context, self.request), name=u'plone_portal_state')
+        site = portal_state.portal()
+        site_path = site.getPhysicalPath()
+        context_path = obj.getPhysicalPath()
+        relative_path = context_path[len(site_path):]
+        data['path'] = "/".join(relative_path)
 
         # record required data
         if data.get('@type', None) != 'Plone Site':
@@ -230,9 +236,9 @@ class ImportExportView(BrowserView):
     def recursiveCreateParentFolder(self, obj_data=None, path_=None):
         log = ''
         path_ = path_ or obj_data['path']
-        parent_path = path_.split(os.sep)[:-1]
-        parent_id = path_.split(os.sep)[-1]
-        obj = self.getobjcontext(parent_path)
+        obj = self.getobjparentcontext(path_.split(os.sep)[:-1])
+        parent_path = self.getobjparentpath(path_)
+        parent_id = parent_path[-1]
         if not obj:
             return self.recursiveCreateParentFolder(
                 path_='/'.join(parent_path))
@@ -260,8 +266,8 @@ class ImportExportView(BrowserView):
     def createcontent(self, obj_data, createAncestry=False):
         log = ""
         path_ = obj_data['path']
-        parent_path = path_.split(os.sep)[:-1]
-        obj = self.getobjcontext(parent_path)
+        parent_path = self.getobjparentpath(path_.split(os.sep))
+        obj = self.getobjparentcontext(path_.split(os.sep))
         if not obj:
             if createAncestry and self.new_content_action == "add":
                 log += self.recursiveCreateParentFolder(obj_data)
@@ -385,8 +391,7 @@ class ImportExportView(BrowserView):
 
             #  os.sep is preferrable to support multiple filesystem
             #  return parent of context
-            parent_path = path_.split(os.sep)[:-1]
-            obj = self.getobjcontext(parent_path)
+            obj = self.getobjparentcontext(path_.split(os.sep))
             if not obj:
                 items_waiting_on_parent.append(obj_data)
                 continue
@@ -472,11 +477,16 @@ class ImportExportView(BrowserView):
 
         return common_path
 
-    # requires path list from root
+    # path may be absolute or relative
     def getobjcontext(self, path):
-
-        obj = self.context
-
+        # if path is absolute, after splitting by os.sep, the first element is empty
+        if not path:
+            return None
+        if path[0]:
+            obj = self.context
+        else:
+            portal_state = getMultiAdapter((self.context, self.request), name=u'plone_portal_state')
+            obj = portal_state.portal()
         # traversing to the desired folder
         for element in path[1:]:
             try:
@@ -485,6 +495,23 @@ class ImportExportView(BrowserView):
                 return None
 
         return obj
+
+    def getobjparentcontext(self, path):
+        # if path is absolute, after splitting by os.sep, the first element is empty
+        parent_path = path[:-1]
+        if not parent_path:
+            # the path is current import folder
+            return self.context.aq_inner.aq_parent
+        else:
+            return self.getobjcontext(parent_path)
+
+    def getobjpath(self, path):
+        # if path is absolute, after splitting by os.sep, the first element is empty
+        return self.getobjcontext(path).getPhysicalPath()[1:]
+
+    def getobjparentpath(self, path):
+        # if path is absolute, after splitting by os.sep, the first element is empty
+        return self.getobjparentcontext(path).getPhysicalPath()[1:]
 
     def requestFile(self, file_):
 
@@ -544,7 +571,6 @@ class ImportExportView(BrowserView):
         global MUST_EXCLUDED_ATTRIBUTES
         global MUST_INCLUDED_ATTRIBUTES
         # global files
-
         # try:
         if self.request.method == 'POST':
 
@@ -607,11 +633,13 @@ class ImportExportView(BrowserView):
             # convert csv to json
             data = self.conversion.converttojson(
                 data=self.files.getCsv(), header=include)
-
             error_log += self.processContentCreation(data=data)
 
             # map old and new UID in memory
             self.mapping.mapNewUID(data)
+            self.reindexMatchedTraversalPaths()
+            error_log += self.deleteNoMatchingContent()
+
             self.reindexMatchedTraversalPaths()
             error_log += self.deleteNoMatchingContent()
 
@@ -623,6 +651,9 @@ class ImportExportView(BrowserView):
                 if not path_:
                     error_log += 'pathError upon deseralizing the content for {arg} \n'.format(
                         arg=obj_data['path'])
+                    continue
+                obj_absolute_path = "/".join(self.getobjpath(path_.split(os.sep)))
+                if obj_absolute_path not in self.matchedTraversalPaths:
                     continue
 
                 if path_ not in self.matchedTraversalPaths:
@@ -636,6 +667,7 @@ class ImportExportView(BrowserView):
 
                 #  os.sep is preferrable to support multiple filesystem
                 #  return context of object
+                print obj_data
                 object_context = self.getobjcontext(
                     obj_data['path'].split(os.sep))
 
