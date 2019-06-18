@@ -2,6 +2,9 @@
 plone.importexport
 ====================
 
+.. image:: https://travis-ci.org/collective/plone.importexport.svg?branch=master
+    :target: https://travis-ci.org/collective/plone.importexport
+
 Introduction
 --------
 
