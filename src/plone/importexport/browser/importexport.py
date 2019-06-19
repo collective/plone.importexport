@@ -189,16 +189,15 @@ class ImportExportView(BrowserView):
                 # send value as a string if only one value have been checked
                 if isinstance(headers, str):
                     headers = [headers]
-                headers = list(set(MUST_INCLUDED_ATTRIBUTES + headers))
-
             else:
                 # 'No check provided. Thus exporting whole content'
                 headers = self.getheaders()
 
-            # MUST_INCLUDED_ATTRIBUTES must present in headers and that too
-            # at first position of list
-            for element in reversed(MUST_INCLUDED_ATTRIBUTES):
-                headers.insert(0, element)
+            # Just to make sure headers does not contain any attribute
+            # from MUST_INCLUDED_ATTRIBUTES
+            headers = list(set(headers) - set(MUST_INCLUDED_ATTRIBUTES))
+            # Appending MUST_INCLUDED_ATTRIBUTES in the beginning
+            headers = MUST_INCLUDED_ATTRIBUTES + headers
 
             # results is a list of dicts
             objData = self.serialize(self.context)
