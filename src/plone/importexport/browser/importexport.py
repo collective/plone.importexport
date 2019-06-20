@@ -193,11 +193,8 @@ class ImportExportView(BrowserView):
                 # 'No check provided. Thus exporting whole content'
                 headers = self.getheaders()
 
-            # Just to make sure headers does not contain any attribute
-            # from MUST_INCLUDED_ATTRIBUTES
-            headers = list(set(headers) - set(MUST_INCLUDED_ATTRIBUTES))
-            # Appending MUST_INCLUDED_ATTRIBUTES in the beginning
-            headers = MUST_INCLUDED_ATTRIBUTES + headers
+            # Just to make sure headers are unique
+            headers = list(set(headers))
 
             # results is a list of dicts
             objData = self.serialize(self.context)
