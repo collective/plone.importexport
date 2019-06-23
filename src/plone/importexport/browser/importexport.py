@@ -712,10 +712,12 @@ class ImportExportView(BrowserView):
 
         matrix = {}
         count = len(headers)
-        rows = float(count / columns)
+        rows = float(count) / columns
 
-        if isinstance(rows, float):
+        if rows != int(rows):
             rows = int(rows) + 1
+        else:
+            rows = int(rows)
 
         for index in range(rows):
             matrix[index] = []
