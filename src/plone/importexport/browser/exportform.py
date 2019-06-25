@@ -47,6 +47,10 @@ def metadataChoices(context):
     views = ImportExportView(context, context.REQUEST)
     try:
         headers = views.getheaders()
+        # Sort the metadata while displaying on the portal
+        # This aids the user to "quickly" find the metadata he is looking for
+        # from the complete list
+        headers = sorted(headers)
         terms = createTerms(headers)
         return SimpleVocabulary(terms)
     except Exception as e:
