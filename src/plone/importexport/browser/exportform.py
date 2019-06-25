@@ -79,7 +79,20 @@ class IExportForm(form.Schema):
     # multi valued field
     metadata = schema.List(title=u'Metadata',
                           required=False,
-                          value_type=schema.Choice(source=metadataChoices))
+                          value_type=schema.Choice(source=metadataChoices)
+    )
+
+    preserve_path = schema.Choice(
+        title=_(u'Preserve relative path'),
+        required=True,
+        vocabulary=SimpleVocabulary(createTerms(['True', 'False']))
+    )
+
+    export_format = schema.Choice(
+        title=_(u'Format for performing export'),
+        required=True,
+        vocabulary=SimpleVocabulary(createTerms(['csv', 'files', 'combined']))
+    )
 
 class ExportForm(form.SchemaForm):
     """
@@ -149,8 +162,10 @@ class ExportForm(form.SchemaForm):
         self.zip = utils.InMemoryZip()
         self.conversion = utils.Pipeline()
         self.headers = data['metadata']
+        self.request.set('exportFormat', data['export_format'])
+        self.preserve_path = (data['preserve_path'] == 'True')
 
-        self.conversion.convertjson(self, results, self.headers)
+        self.conversion.convertjson(self, results, self.headers, self.preserve_path)
 
         # Dispatch the zip file from the browser
         self.request.response.setHeader('Content-Type', 'application/zip')
@@ -168,3 +183,8 @@ class ExportForm(form.SchemaForm):
         # Hence we use the .write method here, which directly streams the
         # content as it is on the browser, thereby preventing the decoding error
         self.request.response.write(self.content)
+
+    @button.buttonAndHandler(u'Reset')
+    def handleReset(self, action):
+        # Hard reset
+        self.request.response.redirect(self.request.URL)

@@ -123,7 +123,7 @@ class Pipeline(object):
             result.append(key[0])
         return result
 
-    def convertjson(self, obj, data_list, csv_headers):
+    def convertjson(self, obj, data_list, csv_headers, preserve_path=True):
         """Convert json list to into zip of csv and BLOB."""
         csv_output = cStringIO.StringIO()
 
@@ -158,7 +158,7 @@ class Pipeline(object):
                         data[key] = 'Null'
                         continue
                     if exportType == 'files' or exportType == 'combined':
-                        data[key] = self.getblob(obj, data[key], data['path'])
+                        data[key] = self.getblob(obj, data[key], data['path'], preserve_path)
                         # converting list and dict to quoted json
                         data[key] = json.dumps(data[key])
                 writer.writerow(data)
@@ -171,7 +171,7 @@ class Pipeline(object):
         csv_output.close()
         return
 
-    def getblob(self, obj, data, path):
+    def getblob(self, obj, data, path, preserve_path=True):
         # CHANGE: From the name of the current method
         # it looks like it's only used for getting the blob object
         # However, it is also appending the data to the zip file
@@ -193,7 +193,10 @@ class Pipeline(object):
             else:
                 filename = data['filename']
                 data['download'] = os.path.join(path, filename)
-                obj.zip.append(data['download'], content)
+                location = data['download']
+                if not preserve_path:
+                    location = location.split(os.sep)[-1]
+                obj.zip.append(location, content)
 
         # '''store html files and replace key[data] with
         #     key[download], value= path in zip'''
@@ -210,7 +213,10 @@ class Pipeline(object):
             else:
                 filename = path.split(os.sep)[-1] + '.html'
                 data['download'] = os.path.join(path, filename)
-                obj.zip.append(data['download'], content)
+                location = data['download']
+                if not preserve_path:
+                    location = location.split(os.sep)[-1]
+                obj.zip.append(location, content)
 
         return data
 
