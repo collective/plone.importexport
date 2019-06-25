@@ -5,7 +5,6 @@ from plone.directives import form
 from plone.app.z3cform.widget import QueryStringFieldWidget
 from zope.component import queryMultiAdapter
 from plone.restapi.interfaces import ISerializeToJson
-from zope.schema.interfaces import IContextSourceBinder
 
 from importexport import exclude_attributes
 from Products.Five import BrowserView
@@ -13,20 +12,13 @@ from Products.Five import BrowserView
 from zope import schema
 from z3c.form import button
 from plone.app.querystring.querybuilder import QueryBuilder
-from zope.component import getUtility
-
 import os
 
 from plone.importexport.browser.importexport import ImportExportView
 from plone.importexport.exceptions import ImportExportError
 from zope.schema.interfaces import IContextSourceBinder
-from zope.schema.vocabulary import SimpleVocabulary
-from zope.schema.vocabulary import SimpleTerm
-from Products.CMFCore.utils import getToolByName
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.interface import directlyProvides
-
-from zope.schema.interfaces import IVocabularyFactory
-from zope.interface import provider
 
 def createSimpleTerm(pair):
     """
@@ -60,6 +52,7 @@ def metadataChoices(context):
     except Exception as e:
         raise ImportExportError('Error in retrieving headers')
 
+# Interfacing metadataChoices with IContextSourceBinder for dynamic vocabularies
 directlyProvides(metadataChoices, IContextSourceBinder)
 
 class IExportForm(form.Schema):
@@ -75,7 +68,7 @@ class IExportForm(form.Schema):
         required=False,
         missing_value=''
     )
-    
+
     form.widget('query', QueryStringFieldWidget)
 
     # Note: Metadata is not fixed and hence we just cannot directly
