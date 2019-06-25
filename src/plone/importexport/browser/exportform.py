@@ -5,6 +5,7 @@ from plone.directives import form
 from plone.app.z3cform.widget import QueryStringFieldWidget
 from zope.component import queryMultiAdapter
 from plone.restapi.interfaces import ISerializeToJson
+from zope.schema.interfaces import IContextSourceBinder
 
 from importexport import exclude_attributes
 from Products.Five import BrowserView
@@ -12,7 +13,31 @@ from Products.Five import BrowserView
 from zope import schema
 from z3c.form import button
 from plone.app.querystring.querybuilder import QueryBuilder
+from zope.component import getUtility
+
 import os
+
+from plone.importexport.browser.importexport import ImportExportView
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import SimpleVocabulary
+from zope.schema.vocabulary import SimpleTerm
+from Products.CMFCore.utils import getToolByName
+from zope.interface import directlyProvides
+
+from zope.schema.interfaces import IVocabularyFactory
+from zope.interface import provider
+
+def metadataChoices(context):
+    views = ImportExportView(context, context.REQUEST)
+    headers = views.getheaders()
+    terms = []
+    if headers:
+        for header in headers:
+            terms.append(SimpleVocabulary.createTerm(header, str(header), header))
+
+    return SimpleVocabulary(terms)
+
+directlyProvides(metadataChoices, IContextSourceBinder)
 
 class IExportForm(form.Schema):
     """
@@ -29,6 +54,10 @@ class IExportForm(form.Schema):
     )
     
     form.widget('query', QueryStringFieldWidget)
+
+    metadata = schema.List(title=u'Metadata',
+                          required=False,
+                          value_type=schema.Choice(source=metadataChoices))
 
 class ExportForm(form.SchemaForm):
     """
