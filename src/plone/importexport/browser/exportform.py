@@ -18,6 +18,7 @@ from zope.component import getUtility
 import os
 
 from plone.importexport.browser.importexport import ImportExportView
+from plone.importexport.exceptions import ImportExportError
 from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary
 from zope.schema.vocabulary import SimpleTerm
@@ -50,13 +51,14 @@ def metadataChoices(context):
     Builds dynamic vocabulary for serving metadata in multi-valued 
     field on export frontend
     """
-
+    
     views = ImportExportView(context, context.REQUEST)
-    headers = views.getheaders()
-    if headers:
+    try:
+        headers = views.getheaders()
         terms = createTerms(headers)
-
-    return SimpleVocabulary(terms)
+        return SimpleVocabulary(terms)
+    except Exception as e:
+        raise ImportExportError('Error in retrieving headers')
 
 directlyProvides(metadataChoices, IContextSourceBinder)
 
