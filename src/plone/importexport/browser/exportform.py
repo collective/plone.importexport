@@ -126,9 +126,9 @@ class ExportForm(form.SchemaForm):
 
         self.zip = utils.InMemoryZip()
         self.conversion = utils.Pipeline()
-        headers = ['@type']
+        self.headers = data['metadata']
 
-        self.conversion.convertjson(self, results, headers)
+        self.conversion.convertjson(self, results, self.headers)
 
         # Dispatch the zip file from the browser
         self.request.response.setHeader('Content-Type', 'application/zip')
