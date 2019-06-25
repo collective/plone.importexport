@@ -27,6 +27,13 @@ from zope.interface import directlyProvides
 from zope.schema.interfaces import IVocabularyFactory
 from zope.interface import provider
 
+def createTerms(items):
+    """
+    Create zope.schema terms for vocab
+    """
+    terms = [SimpleTerm(value=pair, token=pair, title=pair) for pair in items]
+    return terms
+
 def metadataChoices(context):
     """
     Builds dynamic vocabulary for serving metadata in multi-valued 
@@ -35,10 +42,8 @@ def metadataChoices(context):
 
     views = ImportExportView(context, context.REQUEST)
     headers = views.getheaders()
-    terms = []
     if headers:
-        for header in headers:
-            terms.append(SimpleVocabulary.createTerm(header, str(header), header))
+        terms = createTerms(headers)
 
     return SimpleVocabulary(terms)
 
@@ -63,7 +68,7 @@ class IExportForm(form.Schema):
     # Note: Metadata is not fixed and hence we just cannot directly
     # hardcode it in a list. Hence dynamic vocabulary is used here 
     # to extract all the headers from the context (and request) object.
-    
+
     # Using schema.list with schema.choice will can provide the option for 
     # multi valued field
     metadata = schema.List(title=u'Metadata',
