@@ -31,7 +31,7 @@ from zope.interface import provider
 def createSimpleTerm(pair):
     """
     Create zope.schema term out of the given pair.
-    Supports creation of term in case pair is not a tuple by 
+    Supports creation of term in case pair is not a tuple by
     keeping the same value for `value`, `token` and `title`.
     """
     if not isinstance(pair, list):
@@ -41,17 +41,17 @@ def createSimpleTerm(pair):
 
 def createTerms(items):
     """
-    Create zope.schema terms for vocab from tuples (or list) 
+    Create zope.schema terms for vocab from tuples (or list)
     """
     terms = [createSimpleTerm(pair) for pair in items]
     return terms
 
 def metadataChoices(context):
     """
-    Builds dynamic vocabulary for serving metadata in multi-valued 
+    Builds dynamic vocabulary for serving metadata in multi-valued
     field on export frontend
     """
-    
+
     views = ImportExportView(context, context.REQUEST)
     try:
         headers = views.getheaders()
@@ -79,10 +79,10 @@ class IExportForm(form.Schema):
     form.widget('query', QueryStringFieldWidget)
 
     # Note: Metadata is not fixed and hence we just cannot directly
-    # hardcode it in a list. Hence dynamic vocabulary is used here 
+    # hardcode it in a list. Hence dynamic vocabulary is used here
     # to extract all the headers from the context (and request) object.
 
-    # Using schema.list with schema.choice will can provide the option for 
+    # Using schema.list with schema.choice will can provide the option for
     # multi valued field
     metadata = schema.List(title=u'Metadata',
                           required=False,
