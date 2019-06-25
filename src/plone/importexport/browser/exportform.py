@@ -28,6 +28,11 @@ from zope.schema.interfaces import IVocabularyFactory
 from zope.interface import provider
 
 def metadataChoices(context):
+    """
+    Builds dynamic vocabulary for serving metadata in multi-valued 
+    field on export frontend
+    """
+
     views = ImportExportView(context, context.REQUEST)
     headers = views.getheaders()
     terms = []
@@ -55,6 +60,12 @@ class IExportForm(form.Schema):
     
     form.widget('query', QueryStringFieldWidget)
 
+    # Note: Metadata is not fixed and hence we just cannot directly
+    # hardcode it in a list. Hence dynamic vocabulary is used here 
+    # to extract all the headers from the context (and request) object.
+    
+    # Using schema.list with schema.choice will can provide the option for 
+    # multi valued field
     metadata = schema.List(title=u'Metadata',
                           required=False,
                           value_type=schema.Choice(source=metadataChoices))
