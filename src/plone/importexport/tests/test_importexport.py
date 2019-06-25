@@ -7,6 +7,7 @@ from plone import api
 from plone.importexport import utils
 from plone.importexport.testing import PLONE_IMPORTEXPORT_INTEGRATION_TESTING
 from zope.component import getMultiAdapter
+from plone.importexport.importexport import getExcludedAttributes
 
 import copy
 import fnmatch
@@ -93,7 +94,7 @@ class TestImportExportView(unittest.TestCase):
 
     def test_exclude_attributes(self):
 
-        excluded_attributes = self.view.getExcludedAttributes()
+        excluded_attributes = getExcludedAttributes()
 
         data = {k: 1 for k in excluded_attributes}
 

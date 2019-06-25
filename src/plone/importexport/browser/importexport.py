@@ -48,6 +48,24 @@ MUST_EXCLUDED_ATTRIBUTES = [
 # these attributes must be included while importing
 MUST_INCLUDED_ATTRIBUTES = ['@type', 'path', 'id', 'UID']
 
+def getExcludedAttributes():
+    return MUST_EXCLUDED_ATTRIBUTES
+
+def getIncludedAttributes():
+    return MUST_INCLUDED_ATTRIBUTES
+
+# this will del MUST_EXCLUDED_ATTRIBUTES from data till leaves of the tree
+def exclude_attributes(data):
+    if isinstance(data, dict):
+        for key in data.keys():
+            if key in getExcludedAttributes():
+                del data[key]
+                continue
+            if isinstance(data[key], dict):
+                exclude_attributes(data[key])
+            elif isinstance(data[key], list):
+                for index in range(len(data[key])):
+                    exclude_attributes(data[key][index])
 
 class ImportExportView(BrowserView):
     """Import/Export page."""
@@ -68,22 +86,6 @@ class ImportExportView(BrowserView):
         self.existing_content_no_match_action = 'keep'
         self.available_pKeys = utils.get_metadata_pKeys()
 
-    # this will del MUST_EXCLUDED_ATTRIBUTES from data till leaves of the tree
-    def exclude_attributes(self, data):
-
-        if isinstance(data, dict):
-            for key in data.keys():
-
-                if key in self.getExcludedAttributes():
-                    del data[key]
-                    continue
-
-                if isinstance(data[key], dict):
-                    self.exclude_attributes(data[key])
-                elif isinstance(data[key], list):
-                    for index in range(len(data[key])):
-                        self.exclude_attributes(data[key][index])
-
     # Caution: last element of returned list is always a string of errors
     # This funciton serialize obj
     def serialize(self, obj):
@@ -96,7 +98,7 @@ class ImportExportView(BrowserView):
         data = serializer()
 
         # del MUST_EXCLUDED_ATTRIBUTES from data
-        self.exclude_attributes(data)
+        exclude_attributes(data)
         # Get relative path of contxt
         portal_state = getMultiAdapter((self.context, self.request), name=u'plone_portal_state')
         site = portal_state.portal()
@@ -775,11 +777,3 @@ class ImportExportView(BrowserView):
         # JS requires json dump
         matrix = json.dumps(matrix)
         return matrix
-
-    def getExcludedAttributes(self):
-        global MUST_EXCLUDED_ATTRIBUTES
-        return MUST_EXCLUDED_ATTRIBUTES
-
-    def getIncludedAttributes(self):
-        global MUST_INCLUDED_ATTRIBUTES
-        return MUST_INCLUDED_ATTRIBUTES
