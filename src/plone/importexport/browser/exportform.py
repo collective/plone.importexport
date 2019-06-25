@@ -27,11 +27,22 @@ from zope.interface import directlyProvides
 from zope.schema.interfaces import IVocabularyFactory
 from zope.interface import provider
 
+def createSimpleTerm(pair):
+    """
+    Create zope.schema term out of the given pair.
+    Supports creation of term in case pair is not a tuple by 
+    keeping the same value for `value`, `token` and `title`.
+    """
+    if not isinstance(pair, list):
+        pair = [pair, pair, pair]
+    term = SimpleTerm(value=pair[0], token=pair[0], title=pair[1])
+    return term
+
 def createTerms(items):
     """
-    Create zope.schema terms for vocab
+    Create zope.schema terms for vocab from tuples (or list) 
     """
-    terms = [SimpleTerm(value=pair, token=pair, title=pair) for pair in items]
+    terms = [createSimpleTerm(pair) for pair in items]
     return terms
 
 def metadataChoices(context):
