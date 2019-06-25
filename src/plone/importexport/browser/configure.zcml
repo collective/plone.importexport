@@ -19,6 +19,13 @@
         />
 
     <browser:page
+          for="Products.CMFCore.interfaces.IFolderish"
+          name="export-form"
+          permission="cmf.ModifyPortalContent"
+          class=".exportform.ExportForm"
+          />
+
+    <browser:page
         for="Products.CMFCore.interfaces.IFolderish"
         name="export"
         class=".importexport.ImportExportView"
