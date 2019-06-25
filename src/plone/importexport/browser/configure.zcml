@@ -10,6 +10,9 @@
         directory="static"
         />
 
+<!--
+    Older implementation (too much writing of html and js in template). Instead use
+    existing forms and avoid writing explicit template whenever possible
     <browser:page
         for="Products.CMFCore.interfaces.IFolderish"
         name="import-export"
@@ -17,14 +20,16 @@
         permission="cmf.ModifyPortalContent"
         template = "templates/importexport.pt"
         />
+-->
 
     <browser:page
-          for="Products.CMFCore.interfaces.IFolderish"
-          name="export-form"
-          permission="cmf.ModifyPortalContent"
-          class=".exportform.ExportForm"
-          />
+        for="Products.CMFCore.interfaces.IFolderish"
+        name="import-export"
+        class=".exportform.ExportForm"
+        permission="cmf.ModifyPortalContent"
+        />
 
+<!--
     <browser:page
         for="Products.CMFCore.interfaces.IFolderish"
         name="export"
@@ -40,6 +45,7 @@
         attribute="imports"
         permission="cmf.ModifyPortalContent"
         />
+-->
 
     <browser:page
         for="Products.CMFCore.interfaces.IFolderish"

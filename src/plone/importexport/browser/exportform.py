@@ -21,7 +21,7 @@ class IExportForm(form.Schema):
 
     query = schema.List(
         title=_(u'Export'),
-        description=_(u'Export contents from site'),
+        description=_(u'Export contents from site (Import functionality to be added)'),
         value_type=schema.Dict(value_type=schema.Field(),
                                key_type=schema.TextLine()),
         required=False,
