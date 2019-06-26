@@ -700,10 +700,7 @@ class ImportExportView(BrowserView):
             errorLog = objData[-1]
 
         conversion = utils.Pipeline()
-        head = conversion.getcsvheaders(data)
-
-        self.exportHeaders = filter(
-            lambda head: head not in MUST_INCLUDED_ATTRIBUTES, head)
+        self.exportHeaders = conversion.getcsvheaders(data)
 
         return self.exportHeaders
 

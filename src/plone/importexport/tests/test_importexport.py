@@ -237,6 +237,9 @@ class TestImportExportView(unittest.TestCase):
             data = [self.data.getData(contentType='Folder')]
             self.view.processContentCreation(data)
 
+            # Note: With the current implementation, getheaders also returns the attributes
+            # determined by MUST_INCLUDED_ATTRIBUTES (which was not present initially)
+            # Hence this test will modification accordingly
             headers = [
                 'version', u'contributors', u'subjects', u'exclude_from_nav', u'title', u'is_folderish', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'effective', u'language', u'rights', 'created', 'modified', u'allow_discussion', u'creators',  # NOQA: E501
             ]
