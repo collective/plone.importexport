@@ -20,6 +20,25 @@ from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from zope.interface import directlyProvides
 
+from plone.memoize import forever
+
+@forever.memoize
+def getHeaders(context, sort_headers=True):
+    """
+    Obtains headers required for exporting metadata
+    """
+    views = ImportExportView(context, context.REQUEST)
+    try:
+        headers = views.getheaders()
+        # Sorting the metadata while displaying on the portal
+        # aids the user to "quickly" find the metadata he is looking
+        # for from the complete list
+        if sort_headers:
+            headers = sorted(headers)
+        return headers
+    except:
+        ImportExportError('Error in retrieving headers')
+
 def createSimpleTerm(pair):
     """
     Create zope.schema term out of the given pair.
@@ -43,18 +62,9 @@ def metadataChoices(context):
     Builds dynamic vocabulary for serving metadata in multi-valued
     field on export frontend
     """
-
-    views = ImportExportView(context, context.REQUEST)
-    try:
-        headers = views.getheaders()
-        # Sort the metadata while displaying on the portal
-        # This aids the user to "quickly" find the metadata he is looking for
-        # from the complete list
-        headers = sorted(headers)
-        terms = createTerms(headers)
-        return SimpleVocabulary(terms)
-    except Exception as e:
-        raise ImportExportError('Error in retrieving headers')
+    headers = getHeaders()
+    terms = createTerms(headers)
+    return SimpleVocabulary(terms)
 
 # Interfacing metadataChoices with IContextSourceBinder for dynamic vocabularies
 directlyProvides(metadataChoices, IContextSourceBinder)
