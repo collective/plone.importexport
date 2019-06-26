@@ -176,8 +176,16 @@ class ExportForm(form.SchemaForm):
         self.zip = utils.InMemoryZip()
         self.conversion = utils.Pipeline()
         self.headers = data['metadata']
-        self.request.set('exportFormat', data['export_format'])
         self.preserve_path = (data['preserve_path'] == 'True')
+
+        # Setting the value in self.request as it is required in convertjson
+        # function in utils.Pipeline
+        self.request.set('exportFormat', data['export_format'])
+
+        # If no metadata is selected, then by default export
+        # all the metadata
+        if not len(self.headers):
+            self.headers = getHeaders(self.context)
 
         self.conversion.convertjson(self, results, self.headers, self.preserve_path)
 
