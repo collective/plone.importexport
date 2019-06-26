@@ -62,7 +62,7 @@ def metadataChoices(context):
     Builds dynamic vocabulary for serving metadata in multi-valued
     field on export frontend
     """
-    headers = getHeaders()
+    headers = getHeaders(context)
     terms = createTerms(headers)
     return SimpleVocabulary(terms)
 
