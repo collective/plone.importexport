@@ -96,6 +96,12 @@ class IExportForm(form.Schema):
                           value_type=schema.Choice(source=metadataChoices)
     )
 
+    exclude_metadata = schema.Bool(
+        title=_(u'Perform exclusion of selected metadata'),
+        required=True,
+        default=False
+    )
+
     preserve_path = schema.Choice(
         title=_(u'Preserve relative path'),
         required=True,
@@ -176,6 +182,7 @@ class ExportForm(form.SchemaForm):
         self.zip = utils.InMemoryZip()
         self.conversion = utils.Pipeline()
         self.headers = data['metadata']
+        self.exclude_metadata = data['exclude_metadata']
         self.preserve_path = (data['preserve_path'] == 'True')
 
         # Setting the value in self.request as it is required in convertjson
@@ -186,6 +193,12 @@ class ExportForm(form.SchemaForm):
         # all the metadata
         if not len(self.headers):
             self.headers = getHeaders(self.context)
+
+        # Adding functionality to let user select which all functionalities he
+        # wishes to exclude (instead of include)
+        # Useful when we want limited headers to be not present in the metadata
+        if self.exclude_metadata:
+            self.headers = sorted(list(set(getHeaders(self.context)) - set(self.headers)))
 
         self.conversion.convertjson(self, results, self.headers, self.preserve_path)
 
