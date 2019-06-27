@@ -100,7 +100,7 @@ class IExportForm(form.Schema):
     )
 
     exclude_metadata = schema.Bool(
-        title=_(u'Perform exclusion of selected metadata'),
+        title=_(u'Exclude selected metadata'),
         required=True,
         default=False
     )
