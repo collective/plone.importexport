@@ -85,6 +85,9 @@ class IExportForm(form.Schema):
 
     form.widget('query', QueryStringFieldWidget)
 
+    form.mode(sort_on='hidden')
+    sort_on = schema.TextLine(required=False)
+
     # Note: Metadata is not fixed and hence we just cannot directly
     # hardcode it in a list. Hence dynamic vocabulary is used here
     # to extract all the headers from the context (and request) object.
@@ -158,8 +161,10 @@ class ExportForm(form.SchemaForm):
         # whether we set batch=True). This listing contains all the objects
         # that matches the given query and can be used for the export operation
         self.query = data['query']
+        self.sort_on = data['sort_on']
+
         query_builder = QueryBuilder(self.context, self.request)
-        listings = query_builder(self.query)
+        listings = query_builder(self.query, sort_on=self.sort_on)
 
         for listing in listings:
             obj = listing.getObject()
