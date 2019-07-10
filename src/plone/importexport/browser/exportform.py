@@ -143,13 +143,20 @@ class ExportForm(form.SchemaForm):
     @button.buttonAndHandler(u'Export')
     def handleExport(self, action):
         """
-        Attach an export handler button to the ExportForm
+        Attaches an export handler button to the ExportForm
         """
 
         data, errors = self.extractData()
         if errors:
             self.status = self.formErrorsMessage
             return
+
+        return self.baseExport(data)
+
+    def baseExport(self, data):
+        """
+        Main base function for handling export functionality
+        """
 
         results, errorLogs = [], ''
 
@@ -161,6 +168,7 @@ class ExportForm(form.SchemaForm):
         # whether we set batch=True). This listing contains all the objects
         # that matches the given query and can be used for the export operation
         self.query = data['query']
+
         self.sort_on = data['sort_on']
 
         query_builder = QueryBuilder(self.context, self.request)
@@ -226,5 +234,8 @@ class ExportForm(form.SchemaForm):
 
     @button.buttonAndHandler(u'Reset')
     def handleReset(self, action):
-        # Hard reset
+        """
+        Attaches a reset button to the ExportForm
+        This provides a functionality to reset the selection made in the export form
+        """
         self.request.response.redirect(self.request.URL)
