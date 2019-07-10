@@ -239,3 +239,18 @@ class ExportForm(form.SchemaForm):
         This provides a functionality to reset the selection made in the export form
         """
         self.request.response.redirect(self.request.URL)
+
+    @button.buttonAndHandler(u'Export all')
+    def handleExportAll(self, action):
+        """
+        Attaches an "export all" button to the ExportForm
+        This provides a functionality to export all the content from the site
+        """
+        data, errors = self.extractData()
+        if errors:
+            self.status = self.formErrorsMessage
+            return
+
+        # The below query allows us to obtain all the data present in the site
+        data['query'] = [{u'i': u'Title', u'o': u'plone.app.querystring.operation.string.contains', u'v': u''}]
+        return self.baseExport(data)
