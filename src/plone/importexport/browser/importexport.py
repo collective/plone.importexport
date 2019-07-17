@@ -567,6 +567,10 @@ class ImportExportView(BrowserView):
 
     def imports(self):
 
+        # Unable to update the title with below approach
+        doc = self.context['front-page'] # This is welcome to plone front-page
+        doc.title = 'updated title' # Title still remains "Welcome to Plone" in the original site
+
         global MUST_EXCLUDED_ATTRIBUTES
         global MUST_INCLUDED_ATTRIBUTES
         # global files
