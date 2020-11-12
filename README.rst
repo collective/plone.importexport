@@ -25,7 +25,7 @@ Possible use cases include
 - being able to generate reports on site content regardless of how its indexed.
 
 Import/Export will work for any custom or builtin dexterity content type. It uses plone.restapi internally to ensure compatible import/export and mashalling.
-Non-standard CSV data is handled by embedding json inside the CSV so export/export is losseless.
+Non-standard CSV data is handled by embedding json inside the CSV so export/export is losseless. In later releases there will be better handling of large imports and exports to reduce memory consumption and support for a long running process.
 
 Installation
 -------- 
