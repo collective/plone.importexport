@@ -52,6 +52,9 @@ This addon would be only be accessible to people who have designated permission 
 UI
 -------- 
 
+Import/Export is currently an Actions menu item which applies to the current folder. In later releases this will be replace by a global control panel
+with uses the query widget to specify content to export and what to match on content updates as well as where to place any new content on import.
+
 The screen would propose two tabs: Basic and Advanced.
 
 The **Basic tab** would allow to export all the folder and tree contents (and the result is immediately downloaded), or to import contents by uploading files (about the data format see below).
