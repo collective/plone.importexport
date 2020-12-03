@@ -14,6 +14,7 @@ import json
 import os
 import unittest
 from DateTime import DateTime
+import Missing
 
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -85,6 +86,12 @@ class TestImportExportView(unittest.TestCase):
         self.view = getMultiAdapter((self.context, self.request),
                                     name='import-export')
 
+    def assertNoLogErrors(self, log, message= "Failing log for import"):
+        if fnmatch.fnmatch(log, '*Error*'):
+            self.fail('{message}: \n {arg} '.format(
+                message=message, arg=str(log)))
+
+
     def test_template_renders(self):
         results = self.view()
         # XXX: Check some string from this template
@@ -112,8 +119,7 @@ class TestImportExportView(unittest.TestCase):
         with api.env.adopt_roles(['Manager']):
             log = self.view.processContentCreation(data)
 
-        if fnmatch.fnmatch(log, '*Error*'):
-            self.fail('Failed in creating content')
+        self.assertNoLogErrors(log, 'Failed in creating content')
 
         items = self.context.objectItems()
         ids = [id for id,obj in items]
@@ -137,10 +143,7 @@ class TestImportExportView(unittest.TestCase):
                     log = self.view.deserialize(obj, data)
                 else:
                     self.fail('Error in fetching Parent object')
-
-                if fnmatch.fnmatch(log, '*Error*'):
-                    self.fail('Failed deserialized log: \n {arg}'.format(
-                        arg=str(log)))
+                self.assertNoLogErrors(log, "Failed deserialized log")
 
     def test_serialize(self):
 
@@ -152,10 +155,9 @@ class TestImportExportView(unittest.TestCase):
             results = self.view.serialize(self.context)
 
         # XXX: Validate results
-        if fnmatch.fnmatch(json.dumps(results), '*Error*'):
-            self.fail('Error while serializing \n {arg}'.format(
-                arg=str(results[-1])))
-        self.assertIn('@type', json.dumps(results))
+        serialised = json.dumps(results)
+        self.assertNoLogErrors(serialised, "Error while serializing")
+        self.assertIn('@type', serialised)
 
     def test_export(self):
 
@@ -182,13 +184,12 @@ class TestImportExportView(unittest.TestCase):
             self.fail()
 
 
+
     def test_import_ids(self):
 
         with api.env.adopt_roles(['Manager']):
             log = self.view.imports()
-            if fnmatch.fnmatch(log, '*Error*'):
-                self.fail('Failing log for import: \n {arg} '.format(
-                    arg=str(log)))
+        self.assertNoLogErrors(log)
 
         brains =  self.context.portal_catalog.search(dict(sort_on='path'))
         self.assertEqual([b.id for b in brains], [DateTime(d['id']) for d in data])
@@ -199,7 +200,7 @@ class TestImportExportView(unittest.TestCase):
         with api.env.adopt_roles(['Manager']):
             log = self.view.imports()
 
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         brains =  self.context.portal_catalog.search(dict(sort_on='path'))
         self.assertEqual([b.modified for b in brains], [DateTime(d['modified']) for d in data])
 
@@ -229,7 +230,8 @@ class TestImportExportView(unittest.TestCase):
             log = self.view.imports()
 
         brains =  self.context.portal_catalog.search()
-        self.assertEqual([b.review_state for b in brains], [d.get('review_state',None) for d in data])
+        conv = lambda x: unicode(x) if type(x) == str else x
+        self.assertEqual([conv(b.review_state) for b in brains], [d.get('review_state',Missing.Value) for d in data])
 
     def test_import_collection(self):
         data = self.data.getData()
@@ -300,9 +302,29 @@ class TestImportExportView(unittest.TestCase):
             self.view.processContentCreation(data)
 
             headers = [
-                'version', u'contributors', u'subjects', u'exclude_from_nav', u'title', u'is_folderish', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'effective', u'language', u'rights', 'created', 'modified', u'allow_discussion', u'creators',  # NOQA: E501
+                'version', 
+                u'contributors', 
+                'previous_item',  #TODO: should this be here?
+                'next_item', #TODO: should this be here?
+                u'subjects', 
+                u'exclude_from_nav', 
+                u'title', 
+                u'is_folderish', 
+                u'relatedItems', 
+                '@components', 
+                'review_state', 
+                u'description', 
+                u'expires', 
+                u'nextPreviousEnabled', 
+                u'effective', 
+                u'language', 
+                u'rights', 
+                'created', 
+                'modified', 
+                u'allow_discussion', 
+                u'creators',  # NOQA: E501
             ]
-            self.assertEqual(headers, self.view.getheaders())
+            self.assertEqual(set([unicode(x) for x in headers]), set(self.view.getheaders()))
 
     def test_getmatrix(self):
 
