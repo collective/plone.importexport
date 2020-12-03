@@ -13,6 +13,7 @@ import fnmatch
 import json
 import os
 import unittest
+from DateTime import DateTime
 
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -21,7 +22,8 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 class TestData():
 
     def __init__(self):
-        self.zip = open(os.path.join(dir_path, 'ImportExportTest.zip'), 'r')
+        self.zipname = 'ImportExportTest.zip'
+        self.zip = open(os.path.join(dir_path, self.zipname), 'r')
         self.data = [
             {'version': u'current', 'text': {u'download': u'ImportExportTest/front-page/front-page.html', u'content-type': u'text/html', u'encoding': u'utf-8'}, 'id': u'front-page', 'UID': u'cfe123705f34495995c655fa08589066', 'title': u'Plone Conference 2017, Barcelona', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'description': u'Congratulations! You have successfully installed Plone.', 'expires': u'2017-06-16T23:40:00', 'path': u'ImportExportTest/front-page', 'language': u'en-us', 'effective': u'2017-06-16T23:40:00', 'rights': u'private', 'created': u'2017-08-25T12:00:51+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Document'},  # NOQA: E501
             {'version': u'current', 'id': u'news', 'UID': u'df4d14681e0f4dd6bba272f3f588b3c3', 'title': u'News', '@components': {u'breadcrumbs': {}, u'navigation': {}, u'workflow': {}}, 'review_state': u'published', 'description': u'Site News', 'path': u'ImportExportTest/news', 'language': u'en-us', 'effective': u'2017-08-04T13:11:00', 'rights': u'published', 'created': u'2017-08-25T12:00:51+05:30', 'modified': u'2017-08-25T12:01:37+05:30', 'creators': [u'admin'], '@type': u'Folder'},  # NOQA: E501
@@ -99,25 +101,36 @@ class TestImportExportView(unittest.TestCase):
         self.view.exclude_attributes(data)
 
         for key in excluded_attributes:
-            # XXX: asertNotIn not present
+            # XXX: assertNotIn not present
             if key in data.keys():
                 self.fail('{arg} key should not be present'.format(
                     arg=str(key)))
 
     def test_createcontent(self):
+        data = self.data.getData()
 
         with api.env.adopt_roles(['Manager']):
-            log = self.view.createcontent(self.data.getData())
+            log = self.view.processContentCreation(data)
 
         if fnmatch.fnmatch(log, '*Error*'):
             self.fail('Failed in creating content')
 
-    # deserialize funciton of plone.importexport module  is highly coupled and
+        items = self.context.objectItems()
+        ids = [id for id,obj in items]
+        brains =  self.context.portal_catalog.search()
+        self.assertEqual(len(brains), 10)
+        
+        self.assertEqual([b.id for b in brains], [d['id'] for d in data])
+        self.assertEqual([b.portal_type for b in brains], [d['@type'] for d in data])
+        self.assertEqual([b.getPath().strip('/') for b in brains], [d['path'] for d in data])
+
+
+    # deserialize function of plone.importexport module  is highly coupled and
     #  thus unit case is too complex for this
     def test_deserialize(self):
 
         with api.env.adopt_roles(['Manager']):
-            self.view.createcontent(self.data.getData())
+            self.view.processContentCreation(self.data.getData())
             for data in self.data.getData():
                 obj = self.view.getobjcontext(data.get('path').split(os.sep))
                 if obj:
@@ -135,7 +148,7 @@ class TestImportExportView(unittest.TestCase):
             # it's important to inject some data
             # FIXME Require a method from unit test,
             # which inject default Plone data at time of creation self.context
-            self.view.createcontent([self.data.getData(contentType='Folder')])
+            self.view.processContentCreation([self.data.getData(contentType='Folder')])
             results = self.view.serialize(self.context)
 
         # XXX: Validate results
@@ -163,18 +176,70 @@ class TestImportExportView(unittest.TestCase):
 
         self.view.requestFile(self.data.getzip())
         # get json data to create new context
-        if (self.data.getzipname() != self.view.files.keys()[0]) or (
-                self.data.getzip() != self.view.files.values()[0]):
+        zipname = self.view.files.keys()[0].split('/')[-1]
+        zipfile = self.view.files.values()[0]
+        if (self.data.getzipname() != zipname) or (self.data.getzip() != zipfile):
             self.fail()
 
-    def test_import(self):
+
+    def test_import_ids(self):
+
+        with api.env.adopt_roles(['Manager']):
+            log = self.view.imports()
+            if fnmatch.fnmatch(log, '*Error*'):
+                self.fail('Failing log for import: \n {arg} '.format(
+                    arg=str(log)))
+
+        brains =  self.context.portal_catalog.search(dict(sort_on='path'))
+        self.assertEqual([b.id for b in brains], [DateTime(d['id']) for d in data])
+
+    def test_import_modified(self):
+        data = self.data.getData()
 
         with api.env.adopt_roles(['Manager']):
             log = self.view.imports()
 
-            if fnmatch.fnmatch(log, '*Error*'):
-                self.fail('Failing log for import: \n {arg} '.format(
-                    arg=str(log)))
+        import pdb; pdb.set_trace()
+        brains =  self.context.portal_catalog.search(dict(sort_on='path'))
+        self.assertEqual([b.modified for b in brains], [DateTime(d['modified']) for d in data])
+
+    def test_import_created(self):
+        data = self.data.getData()
+
+        with api.env.adopt_roles(['Manager']):
+            log = self.view.imports()
+
+        brains =  self.context.portal_catalog.search()
+        self.assertEqual([b.created for b in brains], [DateTime(d['created']) for d in data])
+
+    def test_import_description(self):
+        data = self.data.getData()
+
+        with api.env.adopt_roles(['Manager']):
+            log = self.view.imports()
+
+        brains =  self.context.portal_catalog.search(dict(sort_on='path'))
+        self.assertEqual([b.getObject().description for b in brains], [d.get('description', None) for d in data])
+
+
+    def test_import_review_state(self):
+        data = self.data.getData()
+
+        with api.env.adopt_roles(['Manager']):
+            log = self.view.imports()
+
+        brains =  self.context.portal_catalog.search()
+        self.assertEqual([b.review_state for b in brains], [d.get('review_state',None) for d in data])
+
+    def test_import_collection(self):
+        data = self.data.getData()
+
+        with api.env.adopt_roles(['Manager']):
+            log = self.view.imports()
+
+        brains =  self.context.portal_catalog.search()
+        self.assertEqual([getattr(b.getObject(), 'query', None) for b in brains], [d.get('query',None) for d in data])
+
 
     def test_getExistingpath(self):
 
@@ -182,35 +247,35 @@ class TestImportExportView(unittest.TestCase):
 
             # create path
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
             query = os.sep.join(data[0]['path'].split('/')[1:])
             self.assertIn(query, str(self.view.getExistingpath()))
 
-    def test_getCommanpath(self):
+    def test_getCommonpath(self):
 
         with api.env.adopt_roles(['Manager']):
 
             # create path
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
             query = data[0]['path'].split('/')[1:]
             query = os.sep.join(query)
             self.assertIn(query,
                           str(self.view.getCommonpath([data[0]['path']])))
 
-    def test_getCommancontent(self):
+    def test_getCommoncontent(self):
 
         with api.env.adopt_roles(['Manager']):
 
             # create path
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
             query = data[0]['path'].split('/')[1:]
             query = os.sep.join(query)
-            self.assertIn(query, str(self.view.getCommancontent()))
+            self.assertIn(query, str(self.view.getCommoncontent()))
 
     def test_getobjcontext(self):
 
@@ -218,7 +283,7 @@ class TestImportExportView(unittest.TestCase):
 
             # create path
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
             query = data[0]['path'].split('/')[1:]
             path = copy.deepcopy(query)
@@ -232,20 +297,20 @@ class TestImportExportView(unittest.TestCase):
 
             # create path
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
             headers = [
-                'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators',  # NOQA: E501
+                'version', u'contributors', u'subjects', u'exclude_from_nav', u'title', u'is_folderish', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'effective', u'language', u'rights', 'created', 'modified', u'allow_discussion', u'creators',  # NOQA: E501
             ]
             self.assertEqual(headers, self.view.getheaders())
 
     def test_getmatrix(self):
 
             headers = [
-                'version', u'contributors', u'exclude_from_nav', u'subjects', u'title', u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled', u'language', u'effective', u'rights', 'created', 'modified', u'allow_discussion', u'creators',  # NOQA: E501
+                'version', u'contributors', u'subjects', u'exclude_from_nav', u'title', u'is_folderish',u'relatedItems', '@components', 'review_state', u'description', u'expires', u'nextPreviousEnabled',u'effective', u'language', u'rights', 'created', 'modified', u'allow_discussion', u'creators',   # NOQA: E501
             ]
 
-            testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'effective', u'language', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', u'title', u'subjects', u'exclude_from_nav'], 4: [u'contributors', 'version']}  # NOQA: E501
+            testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'language', u'effective', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', 'is_folderish', u'title', u'exclude_from_nav'], 4: [u'subjects', u'contributors', 'version']}  # NOQA: E501
 
             matrix = self.view.getmatrix(headers=headers, columns=4)
             self.assertEqual(testmatrix, matrix)
@@ -256,16 +321,15 @@ class TestImportExportView(unittest.TestCase):
 
             # create content
             data = [self.data.getData(contentType='Folder')]
-            self.view.createcontent(data)
+            self.view.processContentCreation(data)
 
-            testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'effective', u'language', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', u'title', u'subjects', u'exclude_from_nav'], 4: [u'contributors', 'version']}  # NOQA: E501
+            testmatrix = {0: [u'creators', u'allow_discussion', 'modified', 'created'], 1: [u'rights', u'language', u'effective', u'nextPreviousEnabled'], 2: [u'expires', u'description', 'review_state', '@components'], 3: [u'relatedItems', 'is_folderish', u'title', u'exclude_from_nav'], 4: [u'subjects', u'contributors', 'version']}  # NOQA: E501
 
             self.assertEqual(testmatrix, self.view.getExportfields())
 
     def test_getImportfields(self):
 
         testmatrix = {u'1': [u'file', u'limit', u'customViewFields', u'effective'], u'0': [u'relatedItems', u'expires', u'start', u'end'], u'3': [u'image', u'text', u'rights', u'description'], u'2': [u'sort_reversed', u'item_count', u'sort_on', u'query'], u'5': [u'created', u'@components', u'version', u'title'], u'4': [u'review_state', u'language', u'creators', u'modified'], u'6': []}  # NOQA: E501
-
         self.assertEqual(testmatrix, json.loads(self.view.getImportfields()))
 
 
@@ -313,7 +377,6 @@ class TestInMemoryZip(unittest.TestCase):
             'ImportExportTest/news/',
             'ImportExportTest/Members/635861-game-wallpaper.jpg/635861-game-wallpaper.jpg',  # NOQA: E501
         ]
-
         files = self.InMemoryZip.getfiles(self.data.getzip())
         self.assertEqual(testfiles, files.keys())
 
@@ -377,7 +440,7 @@ class Testmapping(unittest.TestCase):
 
         with api.env.adopt_roles(['Manager']):
             for data in self.data.getData():
-                log = self.view.createcontent([data])
+                log = self.view.processContentCreation([data])
                 path = data.get('path').split('/')[1:]
                 path.insert(0, 'plone')
                 path = os.sep.join(path)
@@ -393,7 +456,7 @@ class Testmapping(unittest.TestCase):
         data = [self.data.getData(contentType='Folder')]
 
         with api.env.adopt_roles(['Manager']):
-            log = self.view.createcontent(data)
+            log = self.view.processContentCreation(data)
             path = data[0]['path'].split('/')[1:]
             path.insert(0, 'plone')
             path = os.sep.join(path)
@@ -529,8 +592,8 @@ class TestPipeline(unittest.TestCase):
             'created': u'2017-08-25T12:00:51+05:30',
             'version': u'current',
             '@components': {u'breadcrumbs': {},
-            u'navigation': {},
-            u'workflow': {}},
+                u'navigation': {},
+                u'workflow': {}},
             'review_state': u'published',
             'creators': [u'admin'],
             '@type': u'Folder',
@@ -564,9 +627,9 @@ class TestPipeline(unittest.TestCase):
                 {},
                 {},
                 {},
-                {}
+                {},
             ],
-            jsonList
+            jsonList,
         )
 
     def test_fillblobintojson(self):

@@ -1,20 +1,45 @@
 # -*- coding: UTF-8 -*-
-from bs4 import BeautifulSoup
-from plone.importexport.exceptions import ImportExportError
-from plone.uuid.interfaces import IUUID
-
-import cStringIO
 import csv
+import cStringIO
 import fnmatch
 import json
 import logging
 import operator
 import os
-import StringIO
 import zipfile
+import StringIO
 
+from bs4 import BeautifulSoup
+from plone import api
+from plone.uuid.interfaces import IUUID
+
+from plone.importexport.exceptions import ImportExportError
+from plone.importexport.interfaces import IImportExportSettings
 
 log = logging.getLogger()
+
+
+def remove_from_list(ls, val):
+    if val in ls:
+        ls.remove(val)
+
+
+def get_metadata_pKeys():
+    """ Get metadata fields that are allowed to be used as the primary key.
+    """
+    
+    catalog = api.portal.get_tool('portal_catalog')
+    default_ = set(catalog.indexes())
+    exclude_metafields = set([
+        'total_comments', 'effectiveRange', 'object_provides', 'commentators',
+        'Type', 'cmf_uid', 'is_folderish', 'sync_uid', 'getId', 'meta_type',
+        'is_default_page', 'Date', 'review_state', 'portal_type', 'expires',
+        'allowedRolesAndUsers', 'getObjPositionInParent', 'in_reply_to',
+        'effective', 'created', 'Creator', 'modified', 'sortable_title',
+        'getRawRelatedItems', 'Subject', 'start', 'end', 'SearchableText',
+        'path'
+    ])
+    return ['path'] + list(default_ - exclude_metafields)
 
 
 class InMemoryZip(object):
@@ -262,7 +287,7 @@ class Pipeline(object):
             if value and files.get(value, None):
                 try:
                     content = files[value].read()
-                    obj_data['image']['data'] = content.encode('ase64')
+                    obj_data['image']['data'] = content.encode('base64')
                     obj_data['image']['encoding'] = 'base64'
                 except Exception:
                     error_log += ("""Error in fetching/encoding blob
@@ -278,27 +303,26 @@ class Pipeline(object):
                 except Exception:
                     error_log += ("""Error in fetching/encoding blob
                     from zip {arg}""".format(arg=obj_data['path']))
-
-        if (obj_data.get('text', None) and
-                obj_data['text'].get('content-type', None)):
-            type_ = obj_data['text']['content-type'].split('/')[-1]
-            value = obj_data['text'].get('download', None)
+        data_ = obj_data.get('text', None)
+        if  data_ and data_.get('content-type', None):
+            type_ = data_.get('content-type', None).split('/')[-1]
+            value = data_.get('download', None)
             if type_ == 'html' and value and files.get(value, None):
                 try:
                     # decoding
                     file_data = files[value].read().decode(
-                        obj_data['text']['encoding'])
+                        data_['encoding'])
 
                     # replacing old_UID with new_uid
                     file_data = self.mapping.internallink(file_data)
 
                     # encoding
-                    file_data = file_data.encode(
-                        obj_data['text']['encoding'])
+                    file_data = file_data.decode(
+                        data_['encoding'])
 
-                    obj_data['text']['data'] = file_data
+                    data_['data'] = file_data
 
-                    del obj_data['text']['download']
+                    del data_['download']
                 except Exception:
                     error_log += ("""Error in fetching/encoding blob
                     from zip {arg}""".format(arg=obj_data['path']))
@@ -311,6 +335,17 @@ class mapping(object):
     def __init__(self, obj):
         self.mapping = {}
         self.obj = obj
+        self.available_pKeys = get_metadata_pKeys()
+
+    def getValueFromMetafield(self, key, data):
+        metafields = {
+            'subject': 'subjects',
+        }
+        lw_key = key.lower()
+        return data.get(
+            metafields.get(lw_key, lw_key),
+            data.get(key, None)
+        )
 
     def mapNewUID(self, content):
 
@@ -384,8 +419,10 @@ class fileAnalyse(object):
         ignore = str('*' + os.sep + '*')
         for key in self.files.keys():
             if fnmatch.fnmatch(key, ignore):
-                pass
-            elif fnmatch.fnmatch(key, '*.csv'):
+                continue
+            if fnmatch.fnmatch(key, "__MACOSX/*"):
+                continue
+            if fnmatch.fnmatch(key, '*.csv'):
                     if not self.csv_file:
                         self.csv_file = self.files[key]
                     else:
