@@ -107,7 +107,7 @@ class InMemoryZip(object):
 class Pipeline(object):
 
     def getcsvheaders(self, data=None):
-        """Return unique keys drom list."""
+        """Return unique keys from list."""
         header = {}
         for dict_ in data:
             for key in dict_.keys():
@@ -123,7 +123,7 @@ class Pipeline(object):
             result.append(key[0])
         return result
 
-    def convertjson(self, obj, data_list, csv_headers):
+    def convertjson(self, obj, data_list, csv_headers, preserve_path=True):
         """Convert json list to into zip of csv and BLOB."""
         csv_output = cStringIO.StringIO()
 
@@ -157,10 +157,8 @@ class Pipeline(object):
                     if not data[key]:
                         data[key] = 'Null'
                         continue
-
                     if exportType == 'files' or exportType == 'combined':
-                        data[key] = self.getblob(obj, data[key], data['path'])
-
+                        data[key] = self.getblob(obj, data[key], data['path'], preserve_path)
                         # converting list and dict to quoted json
                         data[key] = json.dumps(data[key])
                 writer.writerow(data)
@@ -173,50 +171,52 @@ class Pipeline(object):
         csv_output.close()
         return
 
-    def getblob(self, obj, data, path_):
-        # store blob content and replace url with path
-        if (isinstance(data, dict) and data.get('download', None)):
-            file_path = path_
-            relative_filepath = os.path.join(
-                *file_path.split(os.sep)[1:])
+    def getblob(self, obj, data, path, preserve_path=True):
+        # CHANGE: From the name of the current method
+        # it looks like it's only used for getting the blob object
+        # However, it is also appending the data to the zip file
+        # associated with obj, which is not a good practise
+        # Hence a change is necessary (either change the function name)
+        # or change the implemention)
 
+        # store blob content and replace url with path
+        # import pdb; pdb.set_trace()
+        if (isinstance(data, dict) and data.get('download', None)):
             try:
-                # REVIEW does separator for content-type here
-                # also depends on os.sep?
                 if data['content-type'].split('/')[0] == 'image':
-                    file_data = obj.context.restrictedTraverse(
-                        str(relative_filepath) + os.sep + 'image').data
+                    content = obj.context.restrictedTraverse(path + os.sep + 'image').data
                 else:
-                    file_data = obj.context.restrictedTraverse(
-                        str(relative_filepath) + os.sep + 'file').data
+                    content = obj.context.restrictedTraverse(path + os.sep + 'file').data
             except Exception as e:
-                log.error('Blob data fetching error')
+                log.error('Error in fetching blob data')
                 log.error(e.message)
             else:
                 filename = data['filename']
-                data['download'] = os.path.join(
-                    file_path, filename)
-                obj.zip.append(data['download'],
-                               file_data)
+                data['download'] = os.path.join(path, filename)
+                location = data['download']
+                if not preserve_path:
+                    location = location.split(os.sep)[-1]
+                obj.zip.append(location, content)
 
         # '''store html files and replace key[data] with
         #     key[download], value= path in zip'''
         elif (isinstance(data, dict) and data.get('data', None)):
-            file_path = path_
-
             try:
                 # REVIEW does separator for content-type
                 # here also depends on os.sep?
                 if data['content-type'].split('/')[1] == 'html':
-                    file_data = data['data'].encode(data['encoding'])
+                    content = data['data'].encode(data['encoding'])
                     del data['data']
             except Exception as e:
                 log.error('html data fetching error')
                 log.error(e.message)
             else:
-                filename = file_path.split(os.sep)[-1] + '.html'
-                data['download'] = os.path.join(file_path, filename)
-                obj.zip.append(data['download'], file_data)
+                filename = path.split(os.sep)[-1] + '.html'
+                data['download'] = os.path.join(path, filename)
+                location = data['download']
+                if not preserve_path:
+                    location = location.split(os.sep)[-1]
+                obj.zip.append(location, content)
 
         return data
 
