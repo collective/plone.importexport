@@ -2,6 +2,9 @@
 plone.importexport
 ====================
 
+.. image:: https://travis-ci.org/collective/plone.importexport.svg?branch=master
+    :target: https://travis-ci.org/collective/plone.importexport
+
 Introduction
 --------
 
@@ -18,7 +21,12 @@ Installation
 - virtualenv .
 - source bin/activate
 - pip install -r requirements.txt
-- ./bin/buildout
+
+Build against the target version file
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+For example to build for Plone 5.1
+
+- ./bin/buildout -c version_plone51.cfg
 - ./bin/instance fg
 
 USAGE

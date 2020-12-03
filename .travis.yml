@@ -1,48 +1,19 @@
-# custom
 language: python
 sudo: false
 
 matrix:
     include:
         - python: "2.7"
-          env: TOXENV=docs,lint-py27,code-analysis
-        - python: "3.6"
-          env: TOXENV=docs,lint-py36
-        - python: "2.7"
-          env: TOXENV=py27-Plone51
-    allow_failures:
-        - python: "3.6"
-          env: TOXENV=py36-Plone52
-
-before_install:
-    - mkdir -p $HOME/buildout-cache/{downloads,eggs,extends}
-    - mkdir $HOME/.buildout
-    - echo "[buildout]" > $HOME/.buildout/default.cfg
-    - echo "download-cache = $HOME/buildout-cache/downloads" >> $HOME/.buildout/default.cfg
-    - echo "eggs-directory = $HOME/buildout-cache/eggs" >> $HOME/.buildout/default.cfg
-    - echo "extends-cache = $HOME/buildout-cache/extends" >> $HOME/.buildout/default.cfg
-    - echo "abi-tag-eggs = true" >> $HOME/.buildout/default.cfg
-
-install:
-    - travis_retry pip install -U setuptools==33.1.1 tox coveralls coverage
-
-before_script:
-    - export DISPLAY=:99.0
-    - sh -e /etc/init.d/xvfb start
-    - firefox -v
+          env: VERSION_FILE=version_plone51.cfg
 
 script:
-    - travis_retry tox
-
-after_success:
-    - coverage combine
-    - coveralls
+    - virtualenv . && source ./bin/activate && echo "Virtualenv successfully activated"
+    - python --version
+    - pip --version
+    - pip install -r requirements.txt
+    - ./bin/buildout -c "$VERSION_FILE"
+    - ./bin/test > output.txt
+    - cut -c-100 output.txt
 
 notifications:
     email: false
-
-cache:
-    pip: true
-    directories:
-      - eggs
-      - $HOME/buildout-cache
