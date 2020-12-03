@@ -1,152 +1,153 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-xmlns:tal="http://xml.zope.org/namespaces/tal"
-xmlns:metal="http://xml.zope.org/namespaces/metal"
-xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-lang="en"
-metal:use-macro="context/main_template/macros/master"
-i18n:domain="plone">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" xmlns:tal="http://xml.zope.org/namespaces/tal" xmlns:metal="http://xml.zope.org/namespaces/metal" xmlns:i18n="http://xml.zope.org/namespaces/i18n" lang="en" metal:use-macro="context/main_template/macros/master" i18n:domain="plone">
+
 <head>
 
 </head>
+
 <body>
+  <metal:style fill-slot="style_slot">
+    <link rel="stylesheet" type="text/css" href="++resource++plone.importexport/import_export.css" />
+  </metal:style>
+
   <metal:js fill-slot="javascript_head_slot">
     <script type="text/javascript" src="++resource++plone.importexport/import_export.js"></script>
   </metal:js>
 
   <metal:content fill-slot="content-core">
 
-  <div class="pat-autotoc autotabs" data-pat-autotoc="section:fieldset;
+    <div class="pat-autotoc autotabs" data-pat-autotoc="section:fieldset;
     levels:legend;">
 
-    <!-- Basic Tab -->
-    <fieldset>
-      <legend i18n:translate="">Basic</legend>
 
-      <!-- Basic Export -->
-      <section>
+      <div class="pat-autotoc autotabs" data-pat-autotoc="section:fieldset; levels:h1;">
 
-        <h2 i18n:translate="">Export</h2>
+        <!-- Advance Export -->
+        <fieldset>
+          <h1 i18n:translate="">Export</h1>
 
-        <form action="export" method="POST">
-          <input type="submit" name="export" value="Export"
-            i18n:attributes="value" />
-        </form>
+          <form action="export" method="POST">
 
-      </section>
-
-      <!-- Basic Import -->
-      <section>
-
-        <!-- <input class="pat-pickadate" data-pat-pickadate="time:true"/> -->
-        <h2 i18n:translate="">Import</h2>
-
-        <!-- <div class="field">
-            <div class="formHelp" i18n:translate="import_basic_importfile_help">
-            Select a CSV or a ZIP file providing the contents to import.
-          </div>
-          <input type="file" name="importfile"  />
-        </div> -->
-
-        <form action="imports" enctype="multipart/form-data" method="POST">
-           <div class="field">
-             <label for="importfile">File</label>
-             <div class="formHelp" i18n:translate="import_basic_importfile_help">
-               Select a CSV or a ZIP file providing the contents to import.
-             </div>
-             <input type="file" name="file" multiple="multiple" />
+          Custom Export Settings
+          <div class="formHelp">
+           Specify fields to export.
+           If nothing is selected, all fields will be exported
+           (@type, path, id and UID are always exported).
            </div>
-           <input type="submit" name="imports" value="Import" i18n:attributes="value" />
-        </form>
+          <input type="radio" id="exportFormat-combiled" name="exportFormat" value="combined" checked="checked" />
+          <label for="exportFormat-combiled">Combined</label>
 
-        <!-- <form action="imports" method="POST">
-          <div class="pat-upload" data-pat-upload='{
-            "showTitle": false
-            }'>
-          </div>
-        </form> -->
-      </section>
+          <input type="radio" id="exportFormat-csv-only" name="exportFormat" value="csv" />
+          <label for="exportFormat-csv-only">CSV only</label>
 
-    </fieldset>
+          <input type="radio" id="exportFormat-files-only" name="exportFormat" value="files" />
+          <label for="exportFormat-files-only">Files only</label>
 
-    <!-- Advance Tab -->
-    <fieldset>
-      <legend i18n:translate="">Advance</legend>
+            <section>
 
-      <div class="pat-autotoc autotabs" data-pat-autotoc="section:subfieldset;
-        levels:h1;">
+              <div>
+                <input type="button" onclick="selectAll('exportFields')" value="Select all" name="Select" />
+                <input type="button" onclick="deselectAll('exportFields')" value="Deselect all" name="Deselect" />
+              </div>
+              <br/>
+              <table class="listing">
+                <thead>
+                  <tr>
+                    <th class="sort">
+                      Field to export
+                    </th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody tal:define="fields python:view.getExportfields();
+                                    num_fields python:len(fields.values());
+                                    num_cols python:4;
+                                    num_rows python:int(num_fields/num_cols)">
+                  <tal:block tal:repeat="index fields">
+                    <tal:block tal:define="oddrow string:even">
+                      <tr >
+                        <tal:block tal:repeat="val python:fields[index]">
+                            <td>
+                              <label tal:attributes="for python:val">
+                                <input type="checkbox" name='exportFields' value='null' tal:attributes="value python:val" />
+                                <tal:block tal:content="python:val"></tal:block>
+                              </label>
+                            </td>
+                        </tal:block>
+                      </tr>
+                    </tal:block>
+                  </tal:block>
+                </tbody>
+              </table>
 
-      <!-- Advance Export -->
-      <subfieldset>
-        <h1 i18n:translate="">Export</h1>
+            </section>
 
-        <form action="export" method="POST">
+            <br>
 
-          <label> Specify Export type </label>
-          <br>
-
-          <input type="radio" name="exportFormat" value="csv" >
-            Only csv
-          </input>
-
-          <input type="radio" name="exportFormat" value="files" >
-            Only files
-          </input>
-
-          <input type="radio" name="exportFormat" value="combined" checked="checked">
-            Combined
-          </input>
-
-          <br>
-          <br>
-
-          <label> Specify fields to export </label>
-          <h5> Defualt fields:{@type, path, id, UID}</h5>
-          <h5> Caution: If nothing is selected, all fields will be exported</h5>
-          <section>
-
-            <div >
-              <input type="button" onclick= "selectAll('exportFields')"  value="Select all"
-                name="Select"/>
-              <input type="button" onclick="deselectAll('exportFields')" value="Deselect all"
-                name="Deselect"/>
-            </div>
-
-            <table>
-              <tr tal:repeat="val python: view.getExportfields().values()">
-                <td tal:repeat="index python: range(len(val))">
-                  <input type="checkbox" name='exportFields' value='null'
-                    tal:attributes="value python: val[index]">
-                  <p tal:content="text python: val[index]">
-                    field
-                  </p>
-                  </input>
-                </td>
-              </tr>
-            </table>
-
-          </section>
-
-          <br>
-
-          <!-- <div id="change"></div>
+            <!-- <div id="change"></div>
           <input type = "button" onclick = "Fun()" name = "Select"
              value = "Click Me" /> -->
 
-          <input type="submit" name="export" value="Export"
-            i18n:attributes="value" />
+            <input type="submit" name="export" value="Export" i18n:attributes="value" />
 
-        </form>
+          </form>
 
-      </subfieldset>
+        </fieldset>
 
-      <!-- Advance Import -->
-      <subfieldset tal:define="exist python: True">
+        <!-- Advanced Import -->
+        <fieldset tal:define="exist python: True">
 
-        <h1 i18n:translate="">Import</h1>
+          <h1 i18n:translate="">Import</h1>
 
           <div>
 
             <form action="imports" enctype="multipart/form-data" method="POST">
+              <h5>Custom Import Settings</h5>
+              <div class="formHelp">
+                Use the settings below to customise the import behaviour
+              </div>
+
+              <h5>Primary Key</h5>
+              <select name="import_key" class="pat-select2" data-pat-select2="width:20em">
+                <tal:block tal:repeat="pKey view/available_pKeys">
+                  <option tal:attributes="value pKey" tal:content="pKey"></option>
+                </tal:block>
+              </select>
+
+              <h5>Import settings</h5>
+              <table class="listing import_export_settings">
+                <tr>
+                  <td>
+                    <h5>If content is new</h5>
+                    <input type="radio" id="new-content-action-add-" name="new_content" value="add" checked="checked">
+                    <label for="new-content-action">Create</label>
+                    <br />
+
+                    <input type="radio" id="new-content-action-skip" name="new_content" value="skip" />
+                    <label for="new-content-action-skip">Skip</label>
+                  </td>
+                  <td>
+                    <h5>If site content matches key</h5>
+
+                    <input type="radio" id="matching-content-action-update" name="matching_content" value="update" checked="checked" />
+                    <label for="matching-content-action-update">Update</label>
+                    <br />
+
+                    <input type="radio" id="matching-content-action-skip" name="matching_content" value="ignore" />
+                    <label for="matching-content-action-skip">Skip</label>
+                  </td>
+                  <td>
+                    <h5>If site content does not match key</h5>
+                    <input type="radio" id="no-match-for-existing-content-action-keep" name="existing_content_no_match" value="keep" checked="checked" />
+                    <label for="no-match-for-existing-content-action-keep">Keep</label>
+                    <br />
+
+                    <input type="radio" id="no-match-for-existing-content-action-remove" name="existing_content_no_match" value="remove" />
+                    <label for="no-match-for-existing-content-action-remove">Remove</label>
+                  </td>
+                </tr>
+              </table>
 
               <!-- File Import mechanism -->
               <div class="field">
@@ -162,24 +163,26 @@ i18n:domain="plone">
 
 
                 <!-- dumb method using tal mechanism, which is not in use anymore-->
-                <div >
-                  <!-- <table cellspacing="0" cellpadding="0" border="0'">
-                    <tr tal:repeat="val python: view.getImportfields().values()">
-                      <td tal:repeat="index python: range(len(val))">
-                        <input type="checkbox" name='importFields' value='null'
-                          tal:attributes="value python: val[index]">
-                        <p tal:content="text python: val[index]">
-                          field
-                        </p>
-                        </input>
-                      </td>
-                    </tr>
-                  </table> -->
-                </div>
+                <!--<div >-->
+                <!--   <table cellspacing="0" cellpadding="0" border="0'">-->
+                <!--    <tr tal:repeat="val python: view.getImportfields().values()">-->
+                <!--      <td tal:repeat="index python: range(len(val))">-->
+                <!--        <input type="checkbox" name='importFields' value='null'-->
+                <!--          tal:attributes="value python: val[index]">-->
+                <!--        <p tal:content="text python: val[index]">-->
+                <!--          field-->
+                <!--        </p>-->
+                <!--        </input>-->
+                <!--      </td>-->
+                <!--    </tr>-->
+                <!--  </table>-->
+                <!--</div>-->
 
                 <!-- this is where create new option will render -->
                 <div id="createNew">
                 </div>
+
+                <input type="submit" name="imports" value="Import" i18n:attributes="value">
 
               </div>
 
@@ -187,13 +190,12 @@ i18n:domain="plone">
 
           </div>
 
-      </subfieldset>
+        </fieldset>
 
       </div>
-    </fieldset>
-
-  </div>
+    </div>
 
   </metal:content>
 </body>
+
 </html>

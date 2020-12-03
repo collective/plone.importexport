@@ -41,7 +41,9 @@ setup(
         'plone.api',
         'setuptools',
         'plone.restapi',
-        'bs4'
+        'bs4',
+        'unicodecsv',
+        'plone.directives.form'
     ],
     extras_require={
         'test': [
