@@ -7,10 +7,11 @@ matrix:
           env: VERSION_FILE=version_plone51.cfg
 
 script:
-    - virtualenv . && source ./bin/activate && echo "Virtualenv successfully activated"
-    - python --version
-    - pip --version
-    - pip install -r requirements.txt
+    # - virtualenv . && source ./bin/activate && echo "Virtualenv successfully activated"
+    # - python --version
+    # - pip --version
+    # - pip install -r requirements.txt
+    - bootstrap.sh "$VERSION_FILE"
     - ./bin/buildout -c "$VERSION_FILE"
     - ./bin/test > output.txt
     - cut -c-100 output.txt
