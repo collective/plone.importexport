@@ -571,120 +571,119 @@ class ImportExportView(BrowserView):
         global MUST_INCLUDED_ATTRIBUTES
         # global files
         # try:
-        if self.request.method == 'POST':
+        if self.request.method != 'POST':
+            raise ImportExportError('Invalid Request Method')
 
-            # request files
-            file_ = self.request.get('file')
 
-            # get the defined import key
-            self.primary_key = \
-                self.request.get('import_key', 'path')
+        # request files
+        file_ = self.request.get('file')
 
-            # match related self.settings, based on defined key
-            self.new_content_action = \
-                self.request.get('new_content', 'add')
-            self.matching_content_action = \
-                self.request.get('matching_content', 'update')
-            self.existing_content_no_match_action = \
-                self.request.get('existing_content_no_match', 'keep')
+        # get the defined import key
+        self.primary_key = \
+            self.request.get('import_key', 'path')
 
-            # files are at self.files
-            self.files = {}
-            self.requestFile(file_)
+        # match related self.settings, based on defined key
+        self.new_content_action = \
+            self.request.get('new_content', 'add')
+        self.matching_content_action = \
+            self.request.get('matching_content', 'update')
+        self.existing_content_no_match_action = \
+            self.request.get('existing_content_no_match', 'keep')
 
-            # file structure and analyser
-            self.files = utils.fileAnalyse(self.files)
+        # files are at self.files
+        self.files = {}
+        self.requestFile(file_)
 
-            if not self.files.getCsv():
-                raise ImportExportError('Provide a good csv file')
+        # file structure and analyser
+        self.files = utils.fileAnalyse(self.files)
 
-            # create zip in memory
-            self.zip = utils.InMemoryZip()
+        if not self.files.getCsv():
+            raise ImportExportError('Provide a good csv file')
 
-            # defines Pipeline
-            self.conversion = utils.Pipeline()
+        # create zip in memory
+        self.zip = utils.InMemoryZip()
 
-            # defines mapping for UID
-            self.mapping = utils.mapping(self)
+        # defines Pipeline
+        self.conversion = utils.Pipeline()
 
-            # get list of existingPath
-            self.getExistingpath()
+        # defines mapping for UID
+        self.mapping = utils.mapping(self)
 
-            error_log = ''
-            temp_log = ''
+        # get list of existingPath
+        self.getExistingpath()
 
-            # check for include attributes in advanced tab
-            if self.request.get('importFields', None):
+        error_log = ''
+        temp_log = ''
 
-                # fields/keys to include
-                include = self.request.get('importFields', None)
-                # BUG in html checkbox input, which send value as a
-                #  string if only one value have been checked
-                if isinstance(include, str):
-                    include = [include]
-                include = list(set(MUST_INCLUDED_ATTRIBUTES +
-                                   include))
+        # check for include attributes in advanced tab
+        if self.request.get('importFields', None):
 
-            else:
-                # 'No check provided. Thus exporting whole content'
-                include = None
-
-            # convert csv to json
-            data = self.conversion.converttojson(
-                data=self.files.getCsv(), header=include)
-            error_log += self.processContentCreation(data=data)
-
-            # map old and new UID in memory
-            self.mapping.mapNewUID(data)
-            self.reindexMatchedTraversalPaths()
-            error_log += self.deleteNoMatchingContent()
-
-            self.reindexMatchedTraversalPaths()
-            error_log += self.deleteNoMatchingContent()
-
-            # deserialize
-            for index in range(len(data)):
-
-                obj_data = data[index]
-                path_ = obj_data.get('path', None)
-                if not path_:
-                    error_log += 'pathError upon deseralizing the content for {arg} \n'.format(
-                        arg=obj_data['path'])
-                    continue
-                obj_absolute_path = "/".join(self.getobjpath(path_.split(os.sep)))
-                if obj_absolute_path not in self.matchedTraversalPaths:
-                    continue
-
-                if path_ not in self.matchedTraversalPaths:
-                    continue
-
-                # get blob content into json data
-                obj_data, temp_log = self.conversion.fillblobintojson(
-                    obj_data, self.files.getFiles(), self.mapping)
-
-                error_log += temp_log
-
-                #  os.sep is preferrable to support multiple filesystem
-                #  return context of object
-                print obj_data
-                object_context = self.getobjcontext(
-                    obj_data['path'].split(os.sep))
-
-                # all import error will be logged back
-                if object_context:
-                    error_log += self.deserialize(object_context, obj_data)
-                else:
-                    error_log += 'Error while attempting to update {arg}\n'.format(
-                        arg=obj_data['path'])
-
-            self.request.RESPONSE.setHeader(
-                'content-type', 'application/text; charset=utf-8')
-            cd = 'attachment; filename=import-log.txt'
-            self.request.RESPONSE.setHeader('Content-Disposition', cd)
-            return error_log
+            # fields/keys to include
+            include = self.request.get('importFields', None)
+            # BUG in html checkbox input, which send value as a
+            #  string if only one value have been checked
+            if isinstance(include, str):
+                include = [include]
+            include = list(set(MUST_INCLUDED_ATTRIBUTES +
+                                include))
 
         else:
-            raise ImportExportError('Invalid Request Method')
+            # 'No check provided. Thus exporting whole content'
+            include = None
+
+        # convert csv to json
+        data = self.conversion.converttojson(
+            data=self.files.getCsv(), header=include)
+        error_log += self.processContentCreation(data=data)
+
+        # map old and new UID in memory
+        self.mapping.mapNewUID(data)
+        self.reindexMatchedTraversalPaths()
+        error_log += self.deleteNoMatchingContent()
+
+        self.reindexMatchedTraversalPaths()
+        error_log += self.deleteNoMatchingContent()
+
+        # deserialize
+        for index in range(len(data)):
+
+            obj_data = data[index]
+            path_ = obj_data.get('path', None)
+            if not path_:
+                error_log += 'pathError upon deseralizing the content for {arg} \n'.format(
+                    arg=obj_data['path'])
+                continue
+            obj_absolute_path = "/".join(self.getobjpath(path_.split(os.sep)))
+            if obj_absolute_path not in self.matchedTraversalPaths:
+                continue
+
+            if path_ not in self.matchedTraversalPaths:
+                continue
+
+            # get blob content into json data
+            obj_data, temp_log = self.conversion.fillblobintojson(
+                obj_data, self.files.getFiles(), self.mapping)
+
+            error_log += temp_log
+
+            #  os.sep is preferrable to support multiple filesystem
+            #  return context of object
+            #print obj_data
+            object_context = self.getobjcontext(
+                obj_data['path'].split(os.sep))
+
+            # all import error will be logged back
+            if object_context:
+                error_log += self.deserialize(object_context, obj_data)
+            else:
+                error_log += 'Error while attempting to update {arg}\n'.format(
+                    arg=obj_data['path'])
+
+        self.request.RESPONSE.setHeader(
+            'content-type', 'application/text; charset=utf-8')
+        cd = 'attachment; filename=import-log.txt'
+        self.request.RESPONSE.setHeader('Content-Disposition', cd)
+        return error_log
 
     # return headers of serialized self.context
     def getheaders(self):

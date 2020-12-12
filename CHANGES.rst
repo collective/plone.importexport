@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.1 (unreleased)
+----------------
+- Fix unittest2 import
+  [djay]
+
 
 1.0 (unreleased) (2017-08-29)
 ----------------

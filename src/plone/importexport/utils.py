@@ -419,8 +419,10 @@ class fileAnalyse(object):
         ignore = str('*' + os.sep + '*')
         for key in self.files.keys():
             if fnmatch.fnmatch(key, ignore):
-                pass
-            elif fnmatch.fnmatch(key, '*.csv'):
+                continue
+            if fnmatch.fnmatch(key, "__MACOSX/*"):
+                continue
+            if fnmatch.fnmatch(key, '*.csv'):
                     if not self.csv_file:
                         self.csv_file = self.files[key]
                     else:
